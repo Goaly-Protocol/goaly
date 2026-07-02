@@ -114,4 +114,31 @@ describe('SyncService credit strategy', () => {
     expect(await sync.syncScores()).toBe(1);
     expect(settled).toEqual([{ matchId: 'm1', result: 'HOME' }]);
   });
+
+  test('opens an on-chain market once per new fixture', async () => {
+    const { db } = createDb(':memory:');
+    const provider = new MockSportsProvider([
+      {
+        id: 'm1',
+        homeTeam: 'Argentina',
+        awayTeam: 'Brazil',
+        kickoff: 4_200,
+        round: 'FINAL',
+        status: 'SCHEDULED',
+      },
+    ]);
+    const created: Array<{ matchId: string; closeTime: number }> = [];
+    const sync = new SyncService({
+      db,
+      provider,
+      env: env(),
+      createMarketOnchain: async (matchId, closeTime) => {
+        created.push({ matchId, closeTime });
+      },
+    });
+
+    await sync.syncEvents();
+    await sync.syncEvents(); // second pass: fixture already known
+    expect(created).toEqual([{ matchId: 'm1', closeTime: 4_200 }]);
+  });
 });
