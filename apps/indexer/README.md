@@ -5,12 +5,12 @@ events into a queryable store (SQL + auto GraphQL) powering the app's positions/
 
 ## Indexed data
 
-| Table | Source event | Purpose |
-| --- | --- | --- |
-| `deposit` | `Deposited` | every principal deposit |
-| `withdrawal` | `Withdrawn` | every principal withdrawal |
-| `debtCharge` | `DebtCharged` | prediction credit charged to a user |
-| `account` | all of the above | aggregated per-user position (principal / shares / debt) |
+| Table        | Source event     | Purpose                                                  |
+| ------------ | ---------------- | -------------------------------------------------------- |
+| `deposit`    | `Deposited`      | every principal deposit                                  |
+| `withdrawal` | `Withdrawn`      | every principal withdrawal                               |
+| `debtCharge` | `DebtCharged`    | prediction credit charged to a user                      |
+| `account`    | all of the above | aggregated per-user position (principal / shares / debt) |
 
 ## Run
 

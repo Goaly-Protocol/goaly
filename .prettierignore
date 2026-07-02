@@ -10,6 +10,7 @@ bun.lock
 **/bun.lock
 .ponder
 generated
+apps/indexer/ponder-env.d.ts
 
 # foundry
 packages/contracts/out
@@ -20,8 +21,9 @@ packages/contracts/broadcast
 # solidity is formatted by `forge fmt`, not prettier
 *.sol
 
-# the web app owns its own prettier/eslint setup
-apps/goaly-web
+# the web apps own their own tooling (and are git-ignored)
+apps/app
+apps/landing
 
 # non-code
 LICENSE

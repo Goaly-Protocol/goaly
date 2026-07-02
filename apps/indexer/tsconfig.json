@@ -10,6 +10,12 @@
     "noEmit": true,
     "types": ["node"]
   },
-  "include": ["ponder-env.d.ts", "ponder.config.ts", "ponder.schema.ts", "src/**/*.ts", "abis/**/*.ts"],
+  "include": [
+    "ponder-env.d.ts",
+    "ponder.config.ts",
+    "ponder.schema.ts",
+    "src/**/*.ts",
+    "abis/**/*.ts"
+  ],
   "exclude": ["node_modules", ".ponder"]
 }
