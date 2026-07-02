@@ -1,0 +1,26 @@
+{
+  "name": "@goaly/plugin-odds",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Sports data provider — The Odds API adapter (credit-aware, key rotation) + mock",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test",
+    "test:unit": "bun test",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@goaly/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.2"
+  }
+}
