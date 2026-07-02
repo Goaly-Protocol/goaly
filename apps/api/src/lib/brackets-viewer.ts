@@ -10,7 +10,8 @@ type Result = 'win' | 'loss' | 'draw';
 
 interface ParticipantResult {
   id: number | null;
-  score?: number;
+  // Number, or "1 (4)" when decided on penalties — brackets-viewer .toString()s it.
+  score?: number | string;
   result?: Result;
 }
 
@@ -89,12 +90,15 @@ export function toBracketsViewer(
       const opponent = (
         id: number | null,
         score: number | null,
+        pens: number | null,
         win: boolean,
       ): ParticipantResult | null => {
         if (id === null) return { id: null };
         const result: ParticipantResult = { id };
         if (played) {
-          if (score !== null) result.score = score;
+          // "(4) 1" — penalties in parens BEFORE goals, so the goal score stays right-aligned
+          // with non-shootout matches.
+          if (score !== null) result.score = pens !== null ? `(${pens}) ${score}` : score;
           result.result = win ? 'win' : 'loss';
         }
         return result;
@@ -112,8 +116,8 @@ export function toBracketsViewer(
           : p1 !== null && p2 !== null
             ? STATUS_READY
             : STATUS_WAITING,
-        opponent1: opponent(p1, hs, homeWin),
-        opponent2: opponent(p2, as, played && !homeWin),
+        opponent1: opponent(p1, hs, m.homePens, homeWin),
+        opponent2: opponent(p2, as, m.awayPens, played && !homeWin),
       });
     });
   });
