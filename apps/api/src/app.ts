@@ -1,10 +1,8 @@
 import { ARBITRUM, resolveOutcome } from '@goaly/core';
 import {
-  buildPosition,
   createArbitrumClient,
   marketIdFor,
-  readVaultAccount,
-  serializePosition,
+  readGoUsdtBalance,
   settleMarket,
 } from '@goaly/plugin-onchain';
 import { resolveTeam } from '@goaly/plugin-teams';
@@ -122,12 +120,13 @@ export function createApp(deps: AppDeps): Hono {
     if (!/^0x[0-9a-fA-F]{40}$/.test(address))
       throw new HttpError(400, 'address must be a 20-byte hex');
     const client = createArbitrumClient(deps.env.ARBITRUM_RPC_URL);
-    const reads = await readVaultAccount(
+    const goUsdt = await readGoUsdtBalance(
       client,
       vaultAddress as `0x${string}`,
       address as `0x${string}`,
     );
-    return c.json(serializePosition(buildPosition(reads)));
+    // goUSDT balance = redeemable USDT0 principal (1:1).
+    return c.json({ address, goUsdt: goUsdt.toString() });
   });
 
   // ── Admin: sync, oracle result, settlement, credit usage ──
