@@ -1,10 +1,14 @@
+import { ARBITRUM, resolveOutcome } from '@goaly/core';
 import {
   buildPosition,
   createArbitrumClient,
+  marketIdFor,
   readVaultAccount,
   serializePosition,
+  settleMarket,
 } from '@goaly/plugin-onchain';
 import { resolveTeam } from '@goaly/plugin-teams';
+import { KeyWallet } from '@goaly/plugin-wdk';
 import { Scalar } from '@scalar/hono-api-reference';
 import { desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -145,6 +149,29 @@ export function createApp(deps: AppDeps): Hono {
   app.post('/admin/matches/:id/settle', (c) =>
     c.json(predictionService.settleMatch(c.req.param('id'))),
   );
+
+  // Settle the corresponding on-chain PredictionPool market from the finished match result.
+  app.post('/admin/matches/:id/settle-onchain', async (c) => {
+    const oraclePk = deps.env.ORACLE_PK;
+    if (!oraclePk) throw new HttpError(501, 'ORACLE_PK not configured');
+    const matchId = c.req.param('id');
+    const row = db.select().from(matches).where(eq(matches.id, matchId)).get();
+    if (!row) throw new HttpError(404, 'match not found');
+    if (row.status !== 'FINISHED' || row.homeScore === null || row.awayScore === null) {
+      throw new HttpError(409, 'match has no final result yet');
+    }
+    const result = resolveOutcome({ homeScore: row.homeScore, awayScore: row.awayScore });
+    const marketId = marketIdFor(matchId);
+    const wallet = new KeyWallet(oraclePk as `0x${string}`, {
+      provider: deps.env.ARBITRUM_RPC_URL,
+    });
+    const txHash = await settleMarket(wallet, {
+      pool: ARBITRUM.goaly.predictionPool as `0x${string}`,
+      marketId,
+      result,
+    });
+    return c.json({ matchId, marketId, result, txHash });
+  });
 
   app.get('/admin/usage', (c) => {
     const rows = db.select().from(apiUsage).all();
