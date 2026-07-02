@@ -1,0 +1,23 @@
+{
+  "name": "@goaly/plugin-wdk",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "description": "Self-custodial wallet abstraction for Goaly, backed by Tether's Wallet Development Kit (WDK)",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "bun test",
+    "test:unit": "bun test",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.2"
+  }
+}
