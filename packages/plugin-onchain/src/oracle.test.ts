@@ -4,6 +4,7 @@ import { type Hex, decodeFunctionData } from 'viem';
 import {
   createMarket,
   fundPrize,
+  fundPrizeFromYield,
   marketIdFor,
   predictionPoolOracleAbi,
   settleMarket,
@@ -11,6 +12,7 @@ import {
 
 const POOL = '0x9d77f5e1d5afe5258ca16f808dc5ba1e9f68437f';
 const USDT0 = '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9';
+const VAULT = '0x30042f0225fc513ba22551afcd8d3a88d3e128d1';
 
 async function wallet() {
   const w = new MockWallet();
@@ -68,5 +70,22 @@ describe('oracle actions', () => {
     });
     expect(decoded.functionName).toBe('fundPrize');
     expect(approveHash).not.toBe(fundHash);
+  });
+
+  test('fundPrizeFromYield harvests vault yield then funds the market (3 txs)', async () => {
+    const w = await wallet();
+    const { collectHash, approveHash, fundHash } = await fundPrizeFromYield(w, {
+      vault: VAULT,
+      pool: POOL,
+      usdt0: USDT0,
+      marketId: marketIdFor('m1'),
+      amount: 5_000_000n,
+    });
+    expect(w.sentTxs).toHaveLength(3);
+    expect(w.sentTxs[0]?.to).toBe(VAULT); // collectYield(address)
+    expect(w.sentTxs[0]?.data).toMatch(/^0x[0-9a-f]{72}$/);
+    expect(w.sentTxs[1]?.to).toBe(USDT0); // approve
+    expect(w.sentTxs[2]?.to).toBe(POOL); // fundPrize
+    expect(new Set([collectHash, approveHash, fundHash]).size).toBe(3);
   });
 });
