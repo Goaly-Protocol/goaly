@@ -13,9 +13,10 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { z } from 'zod';
 import type { DB } from './db/client';
-import { apiUsage, matches, predictions } from './db/schema';
+import { apiUsage, matches, oddsCache, predictions } from './db/schema';
 import type { Env } from './env';
 import { HttpError } from './lib/errors';
+import { type MatchOdds, parseH2hOdds, winningOddsBps } from './lib/odds';
 import { openApiDocument } from './openapi';
 import { createIndexerClient } from './services/indexer';
 import type { PredictionService } from './services/prediction.service';
@@ -58,6 +59,19 @@ function withTeamMeta<T extends { homeTeam: string; awayTeam: string }>(row: T) 
   };
 }
 
+/** Cached h2h odds for a match (null when none synced). */
+function matchOdds(db: DB, matchId: string, homeTeam: string, awayTeam: string): MatchOdds | null {
+  const cached = db.select().from(oddsCache).where(eq(oddsCache.matchId, matchId)).get();
+  return cached ? parseH2hOdds(cached.data, homeTeam, awayTeam) : null;
+}
+
+function withMatchDetail<T extends { id: string; homeTeam: string; awayTeam: string }>(
+  db: DB,
+  row: T,
+) {
+  return { ...withTeamMeta(row), odds: matchOdds(db, row.id, row.homeTeam, row.awayTeam) };
+}
+
 export function createApp(deps: AppDeps): Hono {
   const { db, sync, predictions: predictionService } = deps;
   const indexer = deps.env.INDEXER_URL ? createIndexerClient(deps.env.INDEXER_URL) : null;
@@ -95,7 +109,7 @@ export function createApp(deps: AppDeps): Hono {
   // ── Matches (served from cache — never hits the odds API) ──
   app.get('/matches', (c) => {
     const rows = db.select().from(matches).orderBy(matches.kickoff).all();
-    return c.json({ matches: rows.map(withTeamMeta) });
+    return c.json({ matches: rows.map((row) => withMatchDetail(db, row)) });
   });
 
   app.get('/matches/:id', (c) => {
@@ -105,7 +119,7 @@ export function createApp(deps: AppDeps): Hono {
       .where(eq(matches.id, c.req.param('id')))
       .get();
     if (!row) throw new HttpError(404, 'match not found');
-    return c.json(withTeamMeta(row));
+    return c.json(withMatchDetail(db, row));
   });
 
   // ── Predictions ──
@@ -195,6 +209,7 @@ export function createApp(deps: AppDeps): Hono {
     }
     const result = resolveOutcome({ homeScore: row.homeScore, awayScore: row.awayScore });
     const marketId = marketIdFor(matchId);
+    const oddsBps = winningOddsBps(matchOdds(db, matchId, row.homeTeam, row.awayTeam), result);
     const wallet = new KeyWallet(oraclePk as `0x${string}`, {
       provider: deps.env.ARBITRUM_RPC_URL,
     });
@@ -202,8 +217,9 @@ export function createApp(deps: AppDeps): Hono {
       pool: ARBITRUM.goaly.predictionPool as `0x${string}`,
       marketId,
       result,
+      winningOddsBps: oddsBps,
     });
-    return c.json({ matchId, marketId, result, txHash });
+    return c.json({ matchId, marketId, result, winningOddsBps: oddsBps.toString(), txHash });
   });
 
   app.get('/admin/usage', (c) => {
