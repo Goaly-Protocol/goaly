@@ -19,6 +19,9 @@ const schema = z.object({
   // for rotation/fallback. Each free key = 500 credits/month, so N keys ≈ N×500 headroom.
   THE_ODDS_API_KEY: z.string().optional(),
   THE_ODDS_API_KEYS: z.string().optional(),
+  /** Goaly Odds feed (https://odds.goaly.fun) — free, no auth. When set, it is the data source
+   *  (preferred over The Odds API). Set empty to fall back to The Odds API / mock. */
+  GOALY_ODDS_URL: z.string().default('https://odds.goaly.fun'),
   ODDS_SPORT_KEY: z.string().default('soccer_fifa_world_cup'),
   ODDS_REGION: z.string().default('eu'),
   ODDS_MARKETS: z.string().default('h2h'),
