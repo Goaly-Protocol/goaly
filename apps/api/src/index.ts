@@ -2,9 +2,12 @@ import { ARBITRUM, type Outcome } from '@goaly/core';
 import { createMarket, marketIdFor, settleMarket } from '@goaly/plugin-onchain';
 import { createSportsProvider, parseOddsApiKeys } from '@goaly/plugin-odds';
 import { KeyWallet } from '@goaly/plugin-wdk';
+import { eq } from 'drizzle-orm';
 import { createApp } from './app';
 import { createDb } from './db/client';
+import { matches, oddsCache } from './db/schema';
 import { loadEnv } from './env';
+import { parseH2hOdds, winningOddsBps } from './lib/odds';
 import { PredictionService } from './services/prediction.service';
 import { SyncService } from './services/sync.service';
 
@@ -22,10 +25,14 @@ const oracleWallet = oraclePk
 
 const settleOnchain = oracleWallet
   ? async (matchId: string, result: Outcome) => {
+      const row = db.select().from(matches).where(eq(matches.id, matchId)).get();
+      const cached = db.select().from(oddsCache).where(eq(oddsCache.matchId, matchId)).get();
+      const odds = row && cached ? parseH2hOdds(cached.data, row.homeTeam, row.awayTeam) : null;
       await settleMarket(oracleWallet, {
         pool: ARBITRUM.goaly.predictionPool as `0x${string}`,
         marketId: marketIdFor(matchId),
         result,
+        winningOddsBps: winningOddsBps(odds, result),
       });
     }
   : undefined;
