@@ -1,6 +1,6 @@
 export * from './types';
 export { MockWallet } from './mock';
+export { WdkWallet, type WdkWalletOptions } from './wdk-wallet';
 
-// Production implementation lives in the app (browser) using `@tetherto/wdk`, which keeps the
-// user's keys on-device. It implements the `WalletProvider` interface exported here so the rest of
-// the codebase is agnostic to how signing happens. See README for the WDK wiring.
+// `WdkWallet` is backed by Tether's WDK (`@tetherto/wdk-wallet-evm`); keys derive from a BIP-39
+// seed and stay on-device. `MockWallet` is a deterministic in-memory stand-in for dev/tests.
