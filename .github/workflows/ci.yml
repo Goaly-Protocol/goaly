@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   backend:
-    name: Backend (core + api)
+    name: Backend (packages + api)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,10 +22,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - name: Typecheck
         run: bun run typecheck
-      - name: Test @goaly/core
-        run: cd packages/core && bun test
-      - name: Test @goaly/api
-        run: cd apps/api && bun test
+      - name: Test (all TS packages)
+        run: bunx turbo run test --filter=!@goaly/contracts
       - name: Prettier
         run: bunx prettier --check .
 
