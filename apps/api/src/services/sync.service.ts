@@ -1,3 +1,4 @@
+import { type MatchResult, type Outcome, resolveOutcome } from '@goaly/core';
 import { and, desc, eq, lt } from 'drizzle-orm';
 import type { Env } from '../env';
 import type { DB } from '../db/client';
@@ -11,6 +12,8 @@ export interface SyncDeps {
   /** Number of configured API keys (for budget headroom estimate). */
   keyCount?: number;
   now?: () => number;
+  /** Optional hook: settle the on-chain market when a match finishes. */
+  settleOnchain?: (matchId: string, result: Outcome) => Promise<void>;
 }
 
 /**
@@ -106,6 +109,7 @@ export class SyncService {
         .where(eq(matches.id, score.matchId))
         .run();
       updated += 1;
+      await this.settleOnchainSafe(score.matchId, score.result);
     }
     this.record('scores', quota);
     this.touch('scores');
@@ -148,6 +152,16 @@ export class SyncService {
     this.record('odds', quota);
     this.touch('odds');
     return data.length;
+  }
+
+  /** Best-effort on-chain settlement — never breaks the sync loop. */
+  private async settleOnchainSafe(matchId: string, result: MatchResult): Promise<void> {
+    if (!this.deps.settleOnchain) return;
+    try {
+      await this.deps.settleOnchain(matchId, resolveOutcome(result));
+    } catch (error) {
+      console.error(`[sync] on-chain settle failed for ${matchId}`, error);
+    }
   }
 
   private record(endpoint: string, quota?: QuotaInfo): void {
