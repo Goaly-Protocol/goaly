@@ -20,7 +20,7 @@ import { YieldAgentService } from './services/yield-agent.service';
 const env = loadEnv();
 const { db } = createDb(env.DATABASE_URL);
 const oddsKeys = parseOddsApiKeys(env.THE_ODDS_API_KEYS, env.THE_ODDS_API_KEY);
-const provider = createSportsProvider(oddsKeys);
+const provider = createSportsProvider(oddsKeys, env.GOALY_ODDS_URL || undefined);
 const keyCount = Math.max(1, oddsKeys.length);
 
 // When an oracle key is configured, finished matches auto-settle their on-chain market.
