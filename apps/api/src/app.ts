@@ -16,7 +16,13 @@ import type { DB } from './db/client';
 import { apiUsage, matches, oddsCache, predictions } from './db/schema';
 import type { Env } from './env';
 import { HttpError } from './lib/errors';
-import { type MatchOdds, parseH2hOdds, winningOddsBps } from './lib/odds';
+import {
+  closingWinningOddsBps,
+  frozenOdds,
+  type MatchOdds,
+  parseH2hOdds,
+  winningOddsBps,
+} from './lib/odds';
 import { openApiDocument } from './openapi';
 import { createIndexerClient } from './services/indexer';
 import type { PredictionService } from './services/prediction.service';
@@ -65,11 +71,21 @@ function matchOdds(db: DB, matchId: string, homeTeam: string, awayTeam: string):
   return cached ? parseH2hOdds(cached.data, homeTeam, awayTeam) : null;
 }
 
-function withMatchDetail<T extends { id: string; homeTeam: string; awayTeam: string }>(
-  db: DB,
-  row: T,
-) {
-  return { ...withTeamMeta(row), odds: matchOdds(db, row.id, row.homeTeam, row.awayTeam) };
+function withMatchDetail<
+  T extends {
+    id: string;
+    homeTeam: string;
+    awayTeam: string;
+    closingHomeBps: number | null;
+    closingDrawBps: number | null;
+    closingAwayBps: number | null;
+  },
+>(db: DB, row: T) {
+  // Frozen closing odds once kicked off; live cache before that.
+  return {
+    ...withTeamMeta(row),
+    odds: frozenOdds(row) ?? matchOdds(db, row.id, row.homeTeam, row.awayTeam),
+  };
 }
 
 export function createApp(deps: AppDeps): Hono {
@@ -209,7 +225,10 @@ export function createApp(deps: AppDeps): Hono {
     }
     const result = resolveOutcome({ homeScore: row.homeScore, awayScore: row.awayScore });
     const marketId = marketIdFor(matchId);
-    const oddsBps = winningOddsBps(matchOdds(db, matchId, row.homeTeam, row.awayTeam), result);
+    // Prefer the frozen closing odds; fall back to live cache if not frozen yet.
+    const oddsBps =
+      closingWinningOddsBps(row, result) ??
+      winningOddsBps(matchOdds(db, matchId, row.homeTeam, row.awayTeam), result);
     const wallet = new KeyWallet(oraclePk as `0x${string}`, {
       provider: deps.env.ARBITRUM_RPC_URL,
     });

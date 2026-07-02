@@ -1,7 +1,8 @@
 import type { Match } from '@goaly/core';
 import { describe, expect, test } from 'bun:test';
+import { eq } from 'drizzle-orm';
 import { createDb } from '../src/db/client';
-import { apiUsage } from '../src/db/schema';
+import { apiUsage, matches, oddsCache } from '../src/db/schema';
 import { loadEnv } from '../src/env';
 import { MockSportsProvider } from '@goaly/plugin-odds';
 import type { OddsEntry, ProviderResult } from '@goaly/plugin-odds';
@@ -61,7 +62,7 @@ describe('SyncService credit strategy', () => {
     expect(provider.odds).toBe(0); // never called
   });
 
-  test('odds refresh runs when credits are healthy', async () => {
+  test('odds refresh runs when credits are healthy and a match is near kickoff', async () => {
     const { db } = createDb(':memory:');
     const provider = new CountingProvider();
     const sync = new SyncService({
@@ -70,8 +71,90 @@ describe('SyncService credit strategy', () => {
       env: env({ ODDS_CREDIT_RESERVE: '80' }),
       now: () => 1e9,
     });
+    // A match kicking off within the fetch window (~30 min out).
+    db.insert(matches)
+      .values({
+        id: 'm1',
+        sportKey: 'x',
+        homeTeam: 'A',
+        awayTeam: 'B',
+        kickoff: 1_000_000 + 1800,
+        round: 'GROUP',
+        status: 'SCHEDULED',
+        updatedAt: 1,
+      })
+      .run();
     await sync.syncOdds(); // no usage rows => full monthly budget assumed
     expect(provider.odds).toBe(1);
+  });
+
+  test('odds fetch is skipped when no match is near kickoff (saves credits)', async () => {
+    const { db } = createDb(':memory:');
+    const provider = new CountingProvider();
+    const sync = new SyncService({ db, provider, env: env(), now: () => 1e9 });
+    db.insert(matches)
+      .values({
+        id: 'far',
+        sportKey: 'x',
+        homeTeam: 'A',
+        awayTeam: 'B',
+        kickoff: 1_000_000 + 999_999, // well beyond the window
+        round: 'GROUP',
+        status: 'SCHEDULED',
+        updatedAt: 1,
+      })
+      .run();
+    expect(await sync.syncOdds()).toBe(0);
+    expect(provider.odds).toBe(0);
+  });
+
+  test('freezeClosingOdds snapshots odds onto kicked-off matches (once)', () => {
+    const { db } = createDb(':memory:');
+    const sync = new SyncService({
+      db,
+      provider: new CountingProvider(),
+      env: env(),
+      now: () => 2e9,
+    });
+    db.insert(matches)
+      .values({
+        id: 'm1',
+        sportKey: 'x',
+        homeTeam: 'Spain',
+        awayTeam: 'Austria',
+        kickoff: 1_999_000, // already kicked off (now = 2e9ms = 2_000_000s)
+        round: 'GROUP',
+        status: 'SCHEDULED',
+        updatedAt: 1,
+      })
+      .run();
+    db.insert(oddsCache)
+      .values({
+        matchId: 'm1',
+        market: 'h2h',
+        data: JSON.stringify([
+          {
+            markets: [
+              {
+                key: 'h2h',
+                outcomes: [
+                  { name: 'Spain', price: 1.5 },
+                  { name: 'Austria', price: 8 },
+                  { name: 'Draw', price: 4 },
+                ],
+              },
+            ],
+          },
+        ]),
+        fetchedAt: 1,
+      })
+      .run();
+
+    expect(sync.freezeClosingOdds()).toBe(1);
+    const row = db.select().from(matches).where(eq(matches.id, 'm1')).get();
+    expect(row?.closingHomeBps).toBe(15_000);
+    expect(row?.closingAwayBps).toBe(80_000);
+    expect(sync.freezeClosingOdds()).toBe(0); // idempotent
   });
 
   test('extra API keys multiply the budget headroom', () => {

@@ -42,6 +42,11 @@ const schema = z.object({
     .number()
     .int()
     .default(2 * 60 * 60),
+  /** Only fetch odds for matches kicking off within this window (s) — lineups drop ~1h out. */
+  ODDS_FETCH_BEFORE_S: z.coerce
+    .number()
+    .int()
+    .default(60 * 60),
 
   // Protocol fee on pot payouts, in basis points (250 = 2.5%).
   PROTOCOL_FEE_BPS: z.coerce.number().int().min(0).max(10_000).default(250),

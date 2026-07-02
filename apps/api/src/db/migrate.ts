@@ -17,6 +17,9 @@ export function migrate(raw: Database): void {
       status TEXT NOT NULL DEFAULT 'SCHEDULED',
       home_score INTEGER,
       away_score INTEGER,
+      closing_home_bps INTEGER,
+      closing_draw_bps INTEGER,
+      closing_away_bps INTEGER,
       updated_at INTEGER NOT NULL
     );
 
@@ -55,4 +58,13 @@ export function migrate(raw: Database): void {
       last_run_at INTEGER NOT NULL DEFAULT 0
     );
   `);
+
+  // Backfill closing-odds columns on pre-existing DBs (ignored when already present).
+  for (const col of ['closing_home_bps', 'closing_draw_bps', 'closing_away_bps']) {
+    try {
+      raw.exec(`ALTER TABLE matches ADD COLUMN ${col} INTEGER`);
+    } catch {
+      // column already exists
+    }
+  }
 }
