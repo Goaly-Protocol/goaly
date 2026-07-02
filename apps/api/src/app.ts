@@ -107,7 +107,11 @@ export function createApp(deps: AppDeps): Hono {
     const userId = c.req.query('userId');
     if (!userId) throw new HttpError(400, 'userId query param required');
     const rows = db.select().from(predictions).where(eq(predictions.userId, userId)).all();
-    return c.json({ predictions: rows });
+    const enriched = rows.map((prediction) => {
+      const match = db.select().from(matches).where(eq(matches.id, prediction.matchId)).get();
+      return { ...prediction, match: match ? withTeamMeta(match) : null };
+    });
+    return c.json({ predictions: enriched });
   });
 
   // ── On-chain position (reads GoalyVault via viem / @goaly/plugin-onchain) ──
