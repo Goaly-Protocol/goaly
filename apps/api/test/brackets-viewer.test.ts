@@ -35,7 +35,10 @@ const rounds: BracketRound[] = [
 ];
 
 describe('toBracketsViewer', () => {
-  const data = toBracketsViewer(rounds, code);
+  const data = toBracketsViewer(rounds, (t) => ({
+    name: code(t),
+    imageUrl: `https://flagcdn.com/w40/${t.slice(0, 2).toLowerCase()}.png`,
+  }));
 
   test('excludes the third-place round', () => {
     expect(new Set(data.matches.map((m) => m.round_id))).toEqual(new Set([0, 1]));
@@ -61,5 +64,13 @@ describe('toBracketsViewer', () => {
   test('single-elimination stage sized from the first round', () => {
     expect(data.stages[0]?.type).toBe('single_elimination');
     expect(data.stages[0]?.settings.size).toBe(4); // 2 R32 matches × 2
+  });
+
+  test('emits a flag image per named participant', () => {
+    expect(data.participantImages.length).toBe(data.participants.length);
+    const spainId = data.participants.find((p) => p.name === code('Spain'))?.id;
+    expect(data.participantImages.find((i) => i.participantId === spainId)?.imageUrl).toContain(
+      'flagcdn.com',
+    );
   });
 });
