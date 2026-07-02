@@ -1,5 +1,5 @@
 /**
- * Yield accrual and the self-repaying-debt mechanic that powers GoalYield.
+ * Yield accrual and the self-repaying-debt mechanic that powers Goaly.
  *
  * A player's prediction credit is a debt. It is *only ever* repaid by the yield
  * their deposited principal earns — never from the principal itself. Given time,

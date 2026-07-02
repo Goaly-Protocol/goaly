@@ -1,4 +1,4 @@
-import type { Match } from '@goalyield/core';
+import type { Match } from '@goaly/core';
 import { describe, expect, test } from 'bun:test';
 import { createApp } from '../src/app';
 import { createDb } from '../src/db/client';

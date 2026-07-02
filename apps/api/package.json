@@ -1,5 +1,5 @@
 {
-  "name": "@goalyield/api",
+  "name": "@goaly/api",
   "version": "0.1.0",
   "type": "module",
   "private": true,
@@ -14,7 +14,7 @@
     "format:check": "prettier --check ."
   },
   "dependencies": {
-    "@goalyield/core": "workspace:*",
+    "@goaly/core": "workspace:*",
     "@scalar/hono-api-reference": "^0.9.0",
     "drizzle-orm": "^0.38.3",
     "hono": "^4.6.14",

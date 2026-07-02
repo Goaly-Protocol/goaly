@@ -1,4 +1,4 @@
-import type { Match, MatchResult } from '@goalyield/core';
+import type { Match, MatchResult } from '@goaly/core';
 import type { OddsEntry, ProviderResult, ScoreEntry, SportsDataProvider } from './types';
 
 /** Deterministic in-memory provider for local dev and tests (zero credits). */

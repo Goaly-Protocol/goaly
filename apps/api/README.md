@@ -1,12 +1,12 @@
-# @goalyield/api
+# @goaly/api
 
-Bun + Hono + Drizzle (SQLite) API for GoalYield. Serves match data, predictions and
+Bun + Hono + Drizzle (SQLite) API for Goaly. Serves match data, predictions and
 settlement, and keeps the cache fresh with a **credit-aware** sync against The Odds API.
 
 ## Run
 
 ```bash
-bun run --filter @goalyield/api dev     # http://localhost:3001
+bun run --filter @goaly/api dev     # http://localhost:3001
 ```
 
 - API reference (Scalar): `GET /docs`

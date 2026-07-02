@@ -1,4 +1,4 @@
-import type { Match } from '@goalyield/core';
+import type { Match } from '@goaly/core';
 import type { OddsEntry, ProviderResult, QuotaInfo, ScoreEntry, SportsDataProvider } from './types';
 
 const BASE_URL = 'https://api.the-odds-api.com/v4';

@@ -1,17 +1,17 @@
 {
-  "name": "goalyield",
+  "name": "goaly",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "GoalYield — no-loss football prediction powered by self-repaying yield (Tether Developers Cup, WDK track)",
+  "description": "Goaly — no-loss football prediction powered by self-repaying yield (Tether Developers Cup, WDK track)",
   "license": "Apache-2.0",
   "packageManager": "bun@1.2.7",
   "engines": {
     "bun": ">=1.2.0"
   },
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "packages/*",
+    "apps/api"
   ],
   "scripts": {
     "build": "turbo run build",
@@ -23,8 +23,8 @@
     "lint": "turbo run lint",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "contracts:build": "bun run --filter @goalyield/contracts build",
-    "contracts:test": "bun run --filter @goalyield/contracts test"
+    "contracts:build": "bun run --filter @goaly/contracts build",
+    "contracts:test": "bun run --filter @goaly/contracts test"
   },
   "devDependencies": {
     "prettier": "^3.9.4",

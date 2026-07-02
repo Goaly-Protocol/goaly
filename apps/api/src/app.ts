@@ -51,7 +51,7 @@ export function createApp(deps: AppDeps): Hono {
 
   // ── API docs (Scalar) ──
   app.get('/openapi.json', (c) => c.json(openApiDocument));
-  app.get('/docs', Scalar({ url: '/openapi.json', pageTitle: 'GoalYield API', theme: 'purple' }));
+  app.get('/docs', Scalar({ url: '/openapi.json', pageTitle: 'Goaly API', theme: 'purple' }));
 
   app.get('/health', (c) => c.json({ ok: true, provider: sync ? 'ready' : 'none' }));
 

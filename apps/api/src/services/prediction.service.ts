@@ -6,7 +6,7 @@ import {
   distributePot,
   isOpenForPredictions,
   isPredictionCorrect,
-} from '@goalyield/core';
+} from '@goaly/core';
 import { and, eq } from 'drizzle-orm';
 import type { DB } from '../db/client';
 import { matches, predictions } from '../db/schema';

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const schema = z.object({
   API_PORT: z.coerce.number().int().positive().default(3001),
-  DATABASE_URL: z.string().default('./data/goalyield.db'),
+  DATABASE_URL: z.string().default('./data/goaly.db'),
 
   // The Odds API (https://the-odds-api.com). Optional — falls back to the mock provider.
   // Provide ONE key via THE_ODDS_API_KEY, or MANY (comma-separated) via THE_ODDS_API_KEYS

@@ -1,4 +1,4 @@
-import type { Match, MatchResult } from '@goalyield/core';
+import type { Match, MatchResult } from '@goaly/core';
 
 /** Quota telemetry parsed from The Odds API response headers. */
 export interface QuotaInfo {

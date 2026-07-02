@@ -1,9 +1,9 @@
 {
-  "name": "@goalyield/core",
+  "name": "@goaly/core",
   "version": "0.1.0",
   "type": "module",
   "private": true,
-  "description": "Shared domain logic, types, constants and ABIs for GoalYield",
+  "description": "Shared domain logic, types, constants and ABIs for Goaly",
   "main": "./src/index.ts",
   "module": "./src/index.ts",
   "types": "./src/index.ts",

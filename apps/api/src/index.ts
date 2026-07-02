@@ -21,7 +21,7 @@ setInterval(() => {
 }, SYNC_TICK_MS);
 
 console.log(
-  `GoalYield API listening on :${env.API_PORT} (provider: ${provider.name}, keys: ${keyCount})`,
+  `Goaly API listening on :${env.API_PORT} (provider: ${provider.name}, keys: ${keyCount})`,
 );
 
 export default { port: env.API_PORT, fetch: app.fetch };

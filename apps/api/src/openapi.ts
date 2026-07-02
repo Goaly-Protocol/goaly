@@ -1,5 +1,5 @@
 /**
- * OpenAPI 3.1 document for the GoalYield API, served at `/openapi.json` and
+ * OpenAPI 3.1 document for the Goaly API, served at `/openapi.json` and
  * rendered by Scalar at `/docs`.
  */
 
@@ -43,7 +43,7 @@ const Match = {
 export const openApiDocument = {
   openapi: '3.1.0',
   info: {
-    title: 'GoalYield API',
+    title: 'Goaly API',
     version: '0.1.0',
     description:
       'No-loss football prediction API. All stake/payout amounts are USDT0 base units (6 decimals) as decimal strings. Match data is served from a local cache filled by a credit-aware sync against The Odds API.',

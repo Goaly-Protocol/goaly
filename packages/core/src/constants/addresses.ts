@@ -18,5 +18,5 @@ export const ARBITRUM = {
   usdt0: '',
 } as const;
 
-/** The Morpho vault GoalYield supplies into by default. */
+/** The Morpho vault Goaly supplies into by default. */
 export const DEFAULT_YIELD_VAULT = ARBITRUM.morphoVaults.gauntletUsdt0Core;
