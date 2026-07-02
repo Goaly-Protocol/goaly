@@ -8,9 +8,6 @@ export const USDT0_DECIMALS = 6;
 /** Basis points denominator: 10_000 bps = 100%. */
 export const BPS = 10_000n;
 
-/** Seconds in a (365-day) year, used for linear yield accrual. */
-export const SECONDS_PER_YEAR = 31_536_000n;
-
 /** Floor-division multiply: `(a * b) / denominator`. Throws on zero denominator. */
 export function mulDiv(a: bigint, b: bigint, denominator: bigint): bigint {
   if (denominator === 0n) throw new Error('mulDiv: division by zero');
