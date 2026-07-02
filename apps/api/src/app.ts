@@ -175,7 +175,15 @@ export function createApp(deps: AppDeps): Hono {
   // brackets-viewer.js data model (real single-elimination bracket render).
   app.get('/bracket/viewer', async (c) => {
     const rounds = await standings.bracket();
-    return c.json(toBracketsViewer(rounds, (team) => resolveTeam(team)?.code ?? team));
+    return c.json(
+      toBracketsViewer(rounds, (team) => {
+        const meta = resolveTeam(team);
+        return {
+          name: meta?.code ?? team,
+          imageUrl: meta?.iso ? `https://flagcdn.com/w40/${meta.iso}.png` : null,
+        };
+      }),
+    );
   });
 
   // ── Yield Agent (autonomous Morpho rebalancing via a WDK agent wallet) ──

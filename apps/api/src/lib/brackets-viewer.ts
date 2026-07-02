@@ -36,6 +36,13 @@ export interface BracketsViewerData {
   }>;
   matchGames: [];
   participants: Array<{ id: number; tournament_id: number; name: string }>;
+  participantImages: Array<{ participantId: number; imageUrl: string }>;
+}
+
+/** Display name + optional flag for a team. */
+export interface TeamDisplay {
+  name: string;
+  imageUrl: string | null;
 }
 
 // brackets-model Status enum.
@@ -45,20 +52,23 @@ const STATUS_COMPLETED = 4;
 
 export function toBracketsViewer(
   rounds: BracketRound[],
-  codeOf: (team: string) => string,
+  resolve: (team: string) => TeamDisplay,
 ): BracketsViewerData {
   // The third-place play-off is not part of the elimination tree — drop it from the bracket.
   const koRounds = rounds.filter((r) => !/third/i.test(r.name));
 
   const nameToId = new Map<string, number>();
   const participants: BracketsViewerData['participants'] = [];
+  const participantImages: BracketsViewerData['participantImages'] = [];
   const participantId = (team: string): number | null => {
     if (!team) return null;
     const existing = nameToId.get(team);
     if (existing !== undefined) return existing;
     const id = participants.length;
     nameToId.set(team, id);
-    participants.push({ id, tournament_id: 0, name: codeOf(team) });
+    const display = resolve(team);
+    participants.push({ id, tournament_id: 0, name: display.name });
+    if (display.imageUrl) participantImages.push({ participantId: id, imageUrl: display.imageUrl });
     return id;
   };
 
@@ -122,5 +132,6 @@ export function toBracketsViewer(
     matches,
     matchGames: [],
     participants,
+    participantImages,
   };
 }
