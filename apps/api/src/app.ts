@@ -10,6 +10,7 @@ import { KeyWallet } from '@goaly/plugin-wdk';
 import { Scalar } from '@scalar/hono-api-reference';
 import { desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import { z } from 'zod';
 import type { DB } from './db/client';
 import { apiUsage, matches, predictions } from './db/schema';
@@ -61,6 +62,22 @@ export function createApp(deps: AppDeps): Hono {
   const { db, sync, predictions: predictionService } = deps;
   const indexer = deps.env.INDEXER_URL ? createIndexerClient(deps.env.INDEXER_URL) : null;
   const app = new Hono();
+
+  // CORS: allow the web app. Any localhost port in dev, plus configured production origins.
+  const allowedOrigins = (deps.env.CORS_ORIGINS ?? 'https://goaly.fun,https://app.goaly.fun')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  app.use(
+    '*',
+    cors({
+      origin: (origin) => {
+        if (!origin) return origin;
+        if (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) return origin;
+        return allowedOrigins.includes(origin) ? origin : '';
+      },
+    }),
+  );
 
   app.onError((err, c) => {
     if (err instanceof HttpError) return c.json({ error: err.message }, err.status as 400);

@@ -9,6 +9,8 @@ const schema = z.object({
   GOALY_VAULT_ADDRESS: z.string().optional(),
   /** Ponder indexer base URL. When set, on-chain reads are served from it instead of an RPC. */
   INDEXER_URL: z.string().url().optional(),
+  /** Comma-separated production origins allowed by CORS (localhost is always allowed in dev). */
+  CORS_ORIGINS: z.string().optional(),
   /** Oracle private key for on-chain market settlement (server-side, ORACLE_ROLE). */
   ORACLE_PK: z.string().optional(),
 
