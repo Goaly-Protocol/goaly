@@ -3,8 +3,8 @@ import { describe, expect, test } from 'bun:test';
 import { createDb } from '../src/db/client';
 import { apiUsage } from '../src/db/schema';
 import { loadEnv } from '../src/env';
-import { MockSportsProvider } from '../src/providers/sports';
-import type { OddsEntry, ProviderResult } from '../src/providers/sports';
+import { MockSportsProvider } from '@goaly/plugin-odds';
+import type { OddsEntry, ProviderResult } from '@goaly/plugin-odds';
 import { SyncService } from '../src/services/sync.service';
 
 /** Counts provider calls so we can assert credits are never spent needlessly. */

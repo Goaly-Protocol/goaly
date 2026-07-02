@@ -1,3 +1,9 @@
+import {
+  buildPosition,
+  createArbitrumClient,
+  readVaultAccount,
+  serializePosition,
+} from '@goaly/plugin-onchain';
 import { Scalar } from '@scalar/hono-api-reference';
 import { desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -88,6 +94,22 @@ export function createApp(deps: AppDeps): Hono {
     if (!userId) throw new HttpError(400, 'userId query param required');
     const rows = db.select().from(predictions).where(eq(predictions.userId, userId)).all();
     return c.json({ predictions: rows });
+  });
+
+  // ── On-chain position (reads GoalyVault via viem / @goaly/plugin-onchain) ──
+  app.get('/positions/:address', async (c) => {
+    const vaultAddress = deps.env.GOALY_VAULT_ADDRESS;
+    if (!vaultAddress) throw new HttpError(501, 'GOALY_VAULT_ADDRESS not configured');
+    const address = c.req.param('address');
+    if (!/^0x[0-9a-fA-F]{40}$/.test(address))
+      throw new HttpError(400, 'address must be a 20-byte hex');
+    const client = createArbitrumClient(deps.env.ARBITRUM_RPC_URL);
+    const reads = await readVaultAccount(
+      client,
+      vaultAddress as `0x${string}`,
+      address as `0x${string}`,
+    );
+    return c.json(serializePosition(buildPosition(reads)));
   });
 
   // ── Admin: sync, oracle result, settlement, credit usage ──

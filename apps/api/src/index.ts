@@ -1,14 +1,15 @@
+import { createSportsProvider, parseOddsApiKeys } from '@goaly/plugin-odds';
 import { createApp } from './app';
 import { createDb } from './db/client';
 import { loadEnv } from './env';
-import { createSportsProvider, oddsApiKeys } from './providers/sports';
 import { PredictionService } from './services/prediction.service';
 import { SyncService } from './services/sync.service';
 
 const env = loadEnv();
 const { db } = createDb(env.DATABASE_URL);
-const provider = createSportsProvider(env);
-const keyCount = Math.max(1, oddsApiKeys(env).length);
+const oddsKeys = parseOddsApiKeys(env.THE_ODDS_API_KEYS, env.THE_ODDS_API_KEY);
+const provider = createSportsProvider(oddsKeys);
+const keyCount = Math.max(1, oddsKeys.length);
 
 const sync = new SyncService({ db, provider, env, keyCount });
 const predictions = new PredictionService(db, BigInt(env.PROTOCOL_FEE_BPS));

@@ -4,6 +4,10 @@ const schema = z.object({
   API_PORT: z.coerce.number().int().positive().default(3001),
   DATABASE_URL: z.string().default('./data/goaly.db'),
 
+  // On-chain reads (GoalyVault on Arbitrum One)
+  ARBITRUM_RPC_URL: z.string().default('https://arb1.arbitrum.io/rpc'),
+  GOALY_VAULT_ADDRESS: z.string().optional(),
+
   // The Odds API (https://the-odds-api.com). Optional — falls back to the mock provider.
   // Provide ONE key via THE_ODDS_API_KEY, or MANY (comma-separated) via THE_ODDS_API_KEYS
   // for rotation/fallback. Each free key = 500 credits/month, so N keys ≈ N×500 headroom.
