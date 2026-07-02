@@ -23,6 +23,7 @@ import {
   parseH2hOdds,
   winningOddsBps,
 } from './lib/odds';
+import { StandingsService } from './services/standings.service';
 import { openApiDocument } from './openapi';
 import { createIndexerClient } from './services/indexer';
 import type { PredictionService } from './services/prediction.service';
@@ -33,6 +34,8 @@ export interface AppDeps {
   env: Env;
   sync: SyncService;
   predictions: PredictionService;
+  /** Optional — injected in tests; defaults to a live FIFA-backed instance. */
+  standings?: StandingsService;
 }
 
 const pickSchema = z.discriminatedUnion('market', [
@@ -91,6 +94,7 @@ function withMatchDetail<
 export function createApp(deps: AppDeps): Hono {
   const { db, sync, predictions: predictionService } = deps;
   const indexer = deps.env.INDEXER_URL ? createIndexerClient(deps.env.INDEXER_URL) : null;
+  const standings = deps.standings ?? new StandingsService();
   const app = new Hono();
 
   // CORS: allow the web app. Any localhost port in dev, plus configured production origins.
@@ -136,6 +140,17 @@ export function createApp(deps: AppDeps): Hono {
       .get();
     if (!row) throw new HttpError(404, 'match not found');
     return c.json(withMatchDetail(db, row));
+  });
+
+  // ── Standings (FIFA group tables — free FIFA data API, cached) ──
+  app.get('/standings', async (c) => {
+    const groups = await standings.get();
+    return c.json({
+      groups: groups.map((g) => ({
+        ...g,
+        rows: g.rows.map((r) => ({ ...r, teamMeta: resolveTeam(r.team) })),
+      })),
+    });
   });
 
   // ── Predictions ──
