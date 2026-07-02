@@ -17,6 +17,7 @@
     "@goaly/core": "workspace:*",
     "@goaly/plugin-odds": "workspace:*",
     "@goaly/plugin-onchain": "workspace:*",
+    "@goaly/plugin-teams": "workspace:*",
     "@scalar/hono-api-reference": "^0.9.0",
     "drizzle-orm": "^0.38.3",
     "hono": "^4.6.14",

@@ -4,6 +4,7 @@ import {
   readVaultAccount,
   serializePosition,
 } from '@goaly/plugin-onchain';
+import { resolveTeam } from '@goaly/plugin-teams';
 import { Scalar } from '@scalar/hono-api-reference';
 import { desc, eq } from 'drizzle-orm';
 import { Hono } from 'hono';
@@ -44,6 +45,15 @@ const resultBody = z.object({
   awayScore: z.number().int().min(0),
 });
 
+/** Enrich a match row with resolved team metadata (name, FIFA code, flag). */
+function withTeamMeta<T extends { homeTeam: string; awayTeam: string }>(row: T) {
+  return {
+    ...row,
+    homeTeamMeta: resolveTeam(row.homeTeam),
+    awayTeamMeta: resolveTeam(row.awayTeam),
+  };
+}
+
 export function createApp(deps: AppDeps): Hono {
   const { db, sync, predictions: predictionService } = deps;
   const app = new Hono();
@@ -64,7 +74,7 @@ export function createApp(deps: AppDeps): Hono {
   // ── Matches (served from cache — never hits the odds API) ──
   app.get('/matches', (c) => {
     const rows = db.select().from(matches).orderBy(matches.kickoff).all();
-    return c.json({ matches: rows });
+    return c.json({ matches: rows.map(withTeamMeta) });
   });
 
   app.get('/matches/:id', (c) => {
@@ -74,7 +84,7 @@ export function createApp(deps: AppDeps): Hono {
       .where(eq(matches.id, c.req.param('id')))
       .get();
     if (!row) throw new HttpError(404, 'match not found');
-    return c.json(row);
+    return c.json(withTeamMeta(row));
   });
 
   // ── Predictions ──

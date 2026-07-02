@@ -16,6 +16,7 @@
         "@goaly/core": "workspace:*",
         "@goaly/plugin-odds": "workspace:*",
         "@goaly/plugin-onchain": "workspace:*",
+        "@goaly/plugin-teams": "workspace:*",
         "@scalar/hono-api-reference": "^0.9.0",
         "drizzle-orm": "^0.38.3",
         "hono": "^4.6.14",
@@ -62,6 +63,14 @@
         "@goaly/plugin-wdk": "workspace:*",
         "viem": "^2.21.0",
       },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5.7.2",
+      },
+    },
+    "packages/plugin-teams": {
+      "name": "@goaly/plugin-teams",
+      "version": "0.1.0",
       "devDependencies": {
         "@types/bun": "latest",
         "typescript": "^5.7.2",
@@ -211,6 +220,8 @@
     "@goaly/plugin-odds": ["@goaly/plugin-odds@workspace:packages/plugin-odds"],
 
     "@goaly/plugin-onchain": ["@goaly/plugin-onchain@workspace:packages/plugin-onchain"],
+
+    "@goaly/plugin-teams": ["@goaly/plugin-teams@workspace:packages/plugin-teams"],
 
     "@goaly/plugin-wdk": ["@goaly/plugin-wdk@workspace:packages/plugin-wdk"],
 
