@@ -1,4 +1,4 @@
-# GoalYield ⚽️🟡
+# Goaly ⚽️🟡
 
 > **No-loss football prediction, powered by self-repaying yield.**
 > Predict the tournament. Wrong — you lose nothing. Right — you win real USD₮.
@@ -28,7 +28,7 @@ Worst case: you forgo some yield. Best case: you win real USD₮. Your principal
 | Asset               | **USDT0** (Tether's omnichain USD₮, LayerZero OFT)     |
 | Yield               | **Morpho** MetaMorpho vault (ERC-4626) on **Arbitrum** |
 | Contracts           | **Foundry** (Solidity) — `packages/contracts`          |
-| Shared domain logic | **`@goalyield/core`** — pure TS, fully unit-tested     |
+| Shared domain logic | **`@goaly/core`** — pure TS, fully unit-tested     |
 | API                 | **Bun + Hono + Drizzle + SQLite** — `apps/api`         |
 | Indexer             | **Ponder** — `apps/indexer`                            |
 | Web                 | **Vite + React 19 + HeroUI** — `apps/goaly-web`        |
@@ -42,7 +42,7 @@ apps/
   indexer/     Ponder — indexes on-chain events on Arbitrum
 packages/
   core/        Domain logic (self-repay math, scoring, pot distribution), types, constants, ABIs
-  contracts/   Foundry — GoalYieldVault + PredictionPool, unit + fork-integration tests
+  contracts/   Foundry — GoalyVault + PredictionPool, unit + fork-integration tests
 ```
 
 ## Getting started
@@ -54,9 +54,9 @@ bun install
 cp .env.example .env         # then set ARBITRUM_RPC_URL
 
 # Contracts
-bun run --filter @goalyield/contracts build
-bun run --filter @goalyield/contracts test          # unit tests (mocks)
-bun run --filter @goalyield/contracts test:integration   # fork tests (needs ARBITRUM_RPC_URL)
+bun run --filter @goaly/contracts build
+bun run --filter @goaly/contracts test          # unit tests (mocks)
+bun run --filter @goaly/contracts test:integration   # fork tests (needs ARBITRUM_RPC_URL)
 
 # TypeScript
 bun run test          # all unit + integration tests via Turborepo
