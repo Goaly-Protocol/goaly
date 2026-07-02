@@ -18,12 +18,12 @@ export const ARBITRUM = {
   },
   /** LayerZero V2 EndpointV2. */
   lzEndpoint: '0x1a44076050125825900e736c501f859c50fE728c',
-  /** Goaly contracts deployed + verified on Arbitrum One (migratable vault). */
+  /** Goaly contracts deployed + verified on Arbitrum One. Vault is goUSDT (ERC-20, migratable). */
   goaly: {
-    vault: '0x811830E04753D6Ee1f4b78647a56cd005F7686dE',
-    predictionPool: '0x227596cee251C775b6E532CD226b45f0AB36DAa4',
-    composer: '0x5290b2128dBd996c5b12026dE7010a5FBD7eDe54',
-    deployBlock: 479610270,
+    vault: '0xD3Ec43F60E2AC1517c4DD80C0A23Ad8d902EAF0F', // goUSDT
+    predictionPool: '0xfECc20bdaa28681Bada577731B8A24F415cBCa87',
+    composer: '0xF83c270f5CA29eCa91454Cfd1F9653f619F5d579',
+    deployBlock: 479616669,
   },
 } as const;
 
