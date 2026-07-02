@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "bun test",
     "test:unit": "bun test",
-    "lint": "biome check src"
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@types/bun": "latest",

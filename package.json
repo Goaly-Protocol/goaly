@@ -21,13 +21,13 @@
     "test:integration": "turbo run test:integration",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
-    "format": "biome format --write .",
-    "check": "biome check --write .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "contracts:build": "bun run --filter @goalyield/contracts build",
     "contracts:test": "bun run --filter @goalyield/contracts test"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
+    "prettier": "^3.9.4",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"
   }

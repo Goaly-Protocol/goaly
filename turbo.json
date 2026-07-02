@@ -23,6 +23,7 @@
     "typecheck": {
       "dependsOn": ["^build"]
     },
-    "lint": {}
+    "lint": {},
+    "format:check": {}
   }
 }

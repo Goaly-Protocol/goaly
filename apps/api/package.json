@@ -11,7 +11,7 @@
     "test": "bun test",
     "test:integration": "bun test",
     "db:generate": "drizzle-kit generate",
-    "lint": "biome check src"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@goalyield/core": "workspace:*",

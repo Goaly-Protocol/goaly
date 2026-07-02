@@ -1,0 +1,29 @@
+# dependencies / build output
+node_modules
+dist
+out
+coverage
+.turbo
+
+# lockfiles & generated
+bun.lock
+**/bun.lock
+.ponder
+generated
+
+# foundry
+packages/contracts/out
+packages/contracts/cache
+packages/contracts/lib
+packages/contracts/broadcast
+
+# solidity is formatted by `forge fmt`, not prettier
+*.sol
+
+# the web app owns its own prettier/eslint setup
+apps/goaly-web
+
+# non-code
+LICENSE
+.env
+.env.*
