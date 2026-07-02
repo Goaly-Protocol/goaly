@@ -86,4 +86,32 @@ describe('SyncService credit strategy', () => {
     db.insert(apiUsage).values({ ts: 1, endpoint: 'odds', cost: 1, remaining: 10 }).run();
     expect(sync.creditsRemaining()).toBe(10 + 2 * 500);
   });
+
+  test('auto-settles on-chain when a match finishes', async () => {
+    const { db } = createDb(':memory:');
+    const provider = new MockSportsProvider([
+      {
+        id: 'm1',
+        homeTeam: 'Argentina',
+        awayTeam: 'Brazil',
+        kickoff: 100,
+        round: 'FINAL',
+        status: 'SCHEDULED',
+      },
+    ]);
+    provider.setResult('m1', { homeScore: 2, awayScore: 1 });
+    const settled: Array<{ matchId: string; result: string }> = [];
+    const sync = new SyncService({
+      db,
+      provider,
+      env: env({ ODDS_SCORES_INTERVAL_MS: '0', ODDS_SETTLE_BUFFER_S: '0' }),
+      now: () => 1_000_000_000,
+      settleOnchain: async (matchId, result) => {
+        settled.push({ matchId, result });
+      },
+    });
+    await sync.syncEvents();
+    expect(await sync.syncScores()).toBe(1);
+    expect(settled).toEqual([{ matchId: 'm1', result: 'HOME' }]);
+  });
 });
