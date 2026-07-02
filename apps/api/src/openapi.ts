@@ -111,8 +111,7 @@ export const openApiDocument = {
     },
     '/positions/{address}': {
       get: {
-        summary:
-          'On-chain vault position for an address (principal, debt, remainingDebt, withdrawable)',
+        summary: 'goUSDT balance for an address (redeemable USDT0 principal, 1:1)',
         parameters: [{ name: 'address', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           '200': { description: 'Position' },

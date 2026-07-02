@@ -1,19 +1,13 @@
 /**
- * Runnable end-to-end demo: derive a self-custodial WDK wallet, read its live GoalyVault position
- * on Arbitrum, and dry-run a deposit (encode approve + deposit without broadcasting).
+ * Runnable end-to-end demo: derive a self-custodial WDK wallet, read its live goUSDT balance on
+ * Arbitrum, and dry-run a deposit (encode approve + deposit without broadcasting).
  *
  *   bun examples/end-to-end.ts
  *
  * Env: ARBITRUM_RPC_URL (optional), GOALY_VAULT_ADDRESS (optional), DEMO_SEED (optional).
  */
 import { ARBITRUM } from '@goaly/core';
-import {
-  buildPosition,
-  createArbitrumClient,
-  depositToVault,
-  readVaultAccount,
-  serializePosition,
-} from '@goaly/plugin-onchain';
+import { createArbitrumClient, depositToVault, readGoUsdtBalance } from '@goaly/plugin-onchain';
 import { MockWallet, WdkWallet } from '@goaly/plugin-wdk';
 
 const RPC = process.env.ARBITRUM_RPC_URL ?? 'https://arb1.arbitrum.io/rpc';
@@ -27,10 +21,10 @@ async function main() {
   const account = await wallet.createWallet();
   console.log('1) WDK wallet address:', account.address);
 
-  // 2) Read the live GoalyVault position for that address.
+  // 2) Read the live goUSDT balance (= redeemable USDT0 principal).
   const client = createArbitrumClient(RPC);
-  const reads = await readVaultAccount(client, VAULT, account.address as `0x${string}`);
-  console.log('2) Live vault position:', serializePosition(buildPosition(reads)));
+  const goUsdt = await readGoUsdtBalance(client, VAULT, account.address as `0x${string}`);
+  console.log('2) Live goUSDT balance:', goUsdt.toString());
 
   // 3) Dry-run a 100 USDT0 deposit — capture the encoded txs without broadcasting.
   const dryRun = new MockWallet();
