@@ -21,7 +21,15 @@ export const predictionPoolOracleAbi = [
     inputs: [
       { name: 'marketId', type: 'bytes32' },
       { name: 'result', type: 'uint8' },
+      { name: 'winningOddsBps', type: 'uint256' },
     ],
+    outputs: [],
+  },
+  {
+    type: 'function',
+    name: 'fundReserve',
+    stateMutability: 'nonpayable',
+    inputs: [{ name: 'amount', type: 'uint256' }],
     outputs: [],
   },
   {
@@ -56,17 +64,41 @@ export async function createMarket(
   return wallet.sendTransaction({ to: params.pool, data });
 }
 
-/** Settle a finished market with its result (ORACLE_ROLE). */
+/**
+ * Settle a finished market with its result + the winning outcome's decimal odds ×10_000 (ORACLE_ROLE).
+ * Omit / pass 10_000 (1.00) for no odds boost.
+ */
 export async function settleMarket(
   wallet: WalletProvider,
-  params: { pool: Address; marketId: Hex; result: Outcome },
+  params: { pool: Address; marketId: Hex; result: Outcome; winningOddsBps?: bigint },
 ): Promise<string> {
   const data = encodeFunctionData({
     abi: predictionPoolOracleAbi,
     functionName: 'settleMarket',
-    args: [params.marketId, OUTCOME_INDEX[params.result]],
+    args: [params.marketId, OUTCOME_INDEX[params.result], params.winningOddsBps ?? 10_000n],
   });
   return wallet.sendTransaction({ to: params.pool, data });
+}
+
+/** Top up the odds-boost reserve: approve USDT0 then fundReserve (from harvested yield). */
+export async function fundReserve(
+  wallet: WalletProvider,
+  params: { pool: Address; usdt0: Address; amount: bigint },
+): Promise<{ approveHash: string; fundHash: string }> {
+  const approveData = encodeFunctionData({
+    abi: erc20Abi,
+    functionName: 'approve',
+    args: [params.pool, params.amount],
+  });
+  const approveHash = await wallet.sendTransaction({ to: params.usdt0, data: approveData });
+
+  const fundData = encodeFunctionData({
+    abi: predictionPoolOracleAbi,
+    functionName: 'fundReserve',
+    args: [params.amount],
+  });
+  const fundHash = await wallet.sendTransaction({ to: params.pool, data: fundData });
+  return { approveHash, fundHash };
 }
 
 /** Fund a market's prize from yield: approve USDT0 then `fundPrize`. */
