@@ -24,6 +24,7 @@ import {
   winningOddsBps,
 } from './lib/odds';
 import { StandingsService } from './services/standings.service';
+import type { YieldAgentService } from './services/yield-agent.service';
 import { openApiDocument } from './openapi';
 import { createIndexerClient } from './services/indexer';
 import type { PredictionService } from './services/prediction.service';
@@ -36,6 +37,8 @@ export interface AppDeps {
   predictions: PredictionService;
   /** Optional — injected in tests; defaults to a live FIFA-backed instance. */
   standings?: StandingsService;
+  /** Optional — the autonomous yield-rebalancing agent (present when ORACLE_PK is set). */
+  yieldAgent?: YieldAgentService;
 }
 
 const pickSchema = z.discriminatedUnion('market', [
@@ -95,6 +98,7 @@ export function createApp(deps: AppDeps): Hono {
   const { db, sync, predictions: predictionService } = deps;
   const indexer = deps.env.INDEXER_URL ? createIndexerClient(deps.env.INDEXER_URL) : null;
   const standings = deps.standings ?? new StandingsService();
+  const yieldAgent = deps.yieldAgent;
   const app = new Hono();
 
   // CORS: allow the web app. Any localhost port in dev, plus configured production origins.
@@ -165,6 +169,26 @@ export function createApp(deps: AppDeps): Hono {
         })),
       })),
     });
+  });
+
+  // ── Yield Agent (autonomous Morpho rebalancing via a WDK agent wallet) ──
+  app.get('/agent', async (c) => {
+    if (!yieldAgent) return c.json({ enabled: false });
+    const status = yieldAgent.getStatus().lastRunAt
+      ? yieldAgent.getStatus()
+      : await yieldAgent.run(false);
+    return c.json({ enabled: true, ...status });
+  });
+
+  app.post('/agent/run', async (c) => {
+    if (!yieldAgent) throw new HttpError(501, 'yield agent not configured');
+    return c.json(await yieldAgent.run(false)); // refresh decision, no execution
+  });
+
+  app.post('/agent/rebalance', async (c) => {
+    if (!yieldAgent) throw new HttpError(501, 'yield agent not configured');
+    if (!yieldAgent.getStatus().canExecute) throw new HttpError(501, 'agent wallet not configured');
+    return c.json(await yieldAgent.run(true)); // decide + execute the migration on-chain
   });
 
   // ── Predictions ──
