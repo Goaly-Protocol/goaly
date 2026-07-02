@@ -50,6 +50,17 @@ const schema = z.object({
 
   // Protocol fee on pot payouts, in basis points (250 = 2.5%).
   PROTOCOL_FEE_BPS: z.coerce.number().int().min(0).max(10_000).default(250),
+
+  // Yield Agent — autonomous Morpho rebalancing via a WDK agent wallet (uses ORACLE_PK's MANAGER_ROLE).
+  /** Minimum APY improvement (bps) before the agent migrates the vault's backing. */
+  AGENT_MIN_APY_GAIN_BPS: z.coerce.number().int().default(30),
+  /** Risk floor — never migrate INTO a Morpho vault thinner than this (USD TVL). */
+  AGENT_MIN_TVL_USD: z.coerce.number().default(10),
+  /** When true the agent executes migrations on its own; otherwise it is advisory (decides only). */
+  AGENT_AUTO_REBALANCE: z
+    .string()
+    .default('false')
+    .transform((v) => v === 'true'),
 });
 
 export type Env = z.infer<typeof schema>;

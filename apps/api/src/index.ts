@@ -1,5 +1,10 @@
 import { ARBITRUM, type Outcome } from '@goaly/core';
-import { createMarket, marketIdFor, settleMarket } from '@goaly/plugin-onchain';
+import {
+  createArbitrumClient,
+  createMarket,
+  marketIdFor,
+  settleMarket,
+} from '@goaly/plugin-onchain';
 import { createSportsProvider, parseOddsApiKeys } from '@goaly/plugin-odds';
 import { KeyWallet } from '@goaly/plugin-wdk';
 import { eq } from 'drizzle-orm';
@@ -10,6 +15,7 @@ import { loadEnv } from './env';
 import { closingWinningOddsBps, parseH2hOdds, winningOddsBps } from './lib/odds';
 import { PredictionService } from './services/prediction.service';
 import { SyncService } from './services/sync.service';
+import { YieldAgentService } from './services/yield-agent.service';
 
 const env = loadEnv();
 const { db } = createDb(env.DATABASE_URL);
@@ -58,13 +64,34 @@ const sync = new SyncService({
   ...(createMarketOnchain ? { createMarketOnchain } : {}),
 });
 const predictions = new PredictionService(db, BigInt(env.PROTOCOL_FEE_BPS));
-const app = createApp({ db, env, sync, predictions });
+
+// Autonomous yield agent — watches Morpho USDT0 vaults + rebalances goUSDT's backing (WDK wallet).
+const yieldAgent = new YieldAgentService({
+  client: createArbitrumClient(env.ARBITRUM_RPC_URL),
+  vault: ARBITRUM.goaly.vault as `0x${string}`,
+  candidateVaults: [
+    ARBITRUM.morphoVaults.gauntletUsdt0Core,
+    ARBITRUM.morphoVaults.steakhousePrimeUsdt0,
+  ],
+  params: { minApyGainBps: env.AGENT_MIN_APY_GAIN_BPS, minTvlUsd: env.AGENT_MIN_TVL_USD },
+  ...(oracleWallet ? { wallet: oracleWallet } : {}),
+  autoExecute: env.AGENT_AUTO_REBALANCE,
+});
+
+const app = createApp({ db, env, sync, predictions, yieldAgent });
 
 // Background sync — decoupled from user traffic so credits are spent on our schedule.
 const SYNC_TICK_MS = 5 * 60 * 1000;
 setInterval(() => {
   sync.tick().catch((error) => console.error('[sync] tick failed', error));
 }, SYNC_TICK_MS);
+
+// The yield agent re-evaluates on its own cadence (advisory unless AGENT_AUTO_REBALANCE=true).
+const AGENT_TICK_MS = 15 * 60 * 1000;
+yieldAgent.run().catch((error) => console.error('[agent] initial run failed', error));
+setInterval(() => {
+  yieldAgent.run().catch((error) => console.error('[agent] run failed', error));
+}, AGENT_TICK_MS);
 
 console.log(
   `Goaly API listening on :${env.API_PORT} (provider: ${provider.name}, keys: ${keyCount})`,
