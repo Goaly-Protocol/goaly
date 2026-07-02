@@ -7,6 +7,8 @@ const schema = z.object({
   // On-chain reads (GoalyVault on Arbitrum One)
   ARBITRUM_RPC_URL: z.string().default('https://arb1.arbitrum.io/rpc'),
   GOALY_VAULT_ADDRESS: z.string().optional(),
+  /** Ponder indexer base URL. When set, on-chain reads are served from it instead of an RPC. */
+  INDEXER_URL: z.string().url().optional(),
   /** Oracle private key for on-chain market settlement (server-side, ORACLE_ROLE). */
   ORACLE_PK: z.string().optional(),
 
