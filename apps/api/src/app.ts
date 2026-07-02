@@ -16,6 +16,7 @@ import { apiUsage, matches, predictions } from './db/schema';
 import type { Env } from './env';
 import { HttpError } from './lib/errors';
 import { openApiDocument } from './openapi';
+import { createIndexerClient } from './services/indexer';
 import type { PredictionService } from './services/prediction.service';
 import type { SyncService } from './services/sync.service';
 
@@ -58,6 +59,7 @@ function withTeamMeta<T extends { homeTeam: string; awayTeam: string }>(row: T) 
 
 export function createApp(deps: AppDeps): Hono {
   const { db, sync, predictions: predictionService } = deps;
+  const indexer = deps.env.INDEXER_URL ? createIndexerClient(deps.env.INDEXER_URL) : null;
   const app = new Hono();
 
   app.onError((err, c) => {
@@ -119,14 +121,25 @@ export function createApp(deps: AppDeps): Hono {
     const address = c.req.param('address');
     if (!/^0x[0-9a-fA-F]{40}$/.test(address))
       throw new HttpError(400, 'address must be a 20-byte hex');
+
+    // Prefer the Ponder indexer (served from its DB, no RPC); fall back to a direct vault read.
+    if (indexer) {
+      try {
+        const balance = await indexer.goUsdtBalance(address);
+        return c.json({ address, goUsdt: (balance ?? 0n).toString(), source: 'indexer' });
+      } catch (error) {
+        console.warn('[positions] indexer unavailable, falling back to RPC', error);
+      }
+    }
+
     const client = createArbitrumClient(deps.env.ARBITRUM_RPC_URL);
+    // goUSDT balance = redeemable USDT0 principal (1:1).
     const goUsdt = await readGoUsdtBalance(
       client,
       vaultAddress as `0x${string}`,
       address as `0x${string}`,
     );
-    // goUSDT balance = redeemable USDT0 principal (1:1).
-    return c.json({ address, goUsdt: goUsdt.toString() });
+    return c.json({ address, goUsdt: goUsdt.toString(), source: 'rpc' });
   });
 
   // ── Admin: sync, oracle result, settlement, credit usage ──
