@@ -90,25 +90,25 @@ export async function fundPrize(
   return { approveHash, fundHash };
 }
 
-/** Write ABI fragment for GoalyVault.collectYield (admin harvest of protocol yield). */
+/** Write ABI fragment for GoalyVault.harvestYield (admin harvest of protocol yield). */
 export const goalyVaultAdminAbi = [
   {
     type: 'function',
-    name: 'collectYield',
+    name: 'harvestYield',
     stateMutability: 'nonpayable',
     inputs: [{ name: 'to', type: 'address' }],
     outputs: [{ type: 'uint256' }],
   },
 ] as const;
 
-/** Harvest accrued protocol yield from the vault to `to` (vault owner only). */
-export async function collectVaultYield(
+/** Harvest accrued protocol yield from the vault to `to` (vault admin only). */
+export async function harvestYield(
   wallet: WalletProvider,
   params: { vault: Address; to: Address },
 ): Promise<string> {
   const data = encodeFunctionData({
     abi: goalyVaultAdminAbi,
-    functionName: 'collectYield',
+    functionName: 'harvestYield',
     args: [params.to],
   });
   return wallet.sendTransaction({ to: params.vault, data });
@@ -122,11 +122,11 @@ export async function collectVaultYield(
 export async function fundPrizeFromYield(
   wallet: WalletProvider,
   params: { vault: Address; pool: Address; usdt0: Address; marketId: Hex; amount: bigint },
-): Promise<{ collectHash: string; approveHash: string; fundHash: string }> {
+): Promise<{ harvestHash: string; approveHash: string; fundHash: string }> {
   const account = wallet.getAccount();
   if (!account)
     throw new Error('fundPrizeFromYield: wallet has no account (call createWallet first)');
-  const collectHash = await collectVaultYield(wallet, {
+  const harvestHash = await harvestYield(wallet, {
     vault: params.vault,
     to: account.address as Address,
   });
@@ -136,5 +136,5 @@ export async function fundPrizeFromYield(
     marketId: params.marketId,
     amount: params.amount,
   });
-  return { collectHash, approveHash, fundHash };
+  return { harvestHash, approveHash, fundHash };
 }
