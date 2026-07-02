@@ -111,6 +111,25 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'function',
+    name: 'collectYield',
+    inputs: [
+      {
+        name: 'to',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [
+      {
+        name: 'assets',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
     name: 'debtOf',
     inputs: [
       {
@@ -132,6 +151,30 @@ export const GoalyVaultAbi = [
     type: 'function',
     name: 'deposit',
     inputs: [
+      {
+        name: 'assets',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [
+      {
+        name: 'shares',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'depositFor',
+    inputs: [
+      {
+        name: 'user',
+        type: 'address',
+        internalType: 'address',
+      },
       {
         name: 'assets',
         type: 'uint256',
@@ -370,25 +413,6 @@ export const GoalyVaultAbi = [
       },
     ],
     stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'skim',
-    inputs: [
-      {
-        name: 'to',
-        type: 'address',
-        internalType: 'address',
-      },
-    ],
-    outputs: [
-      {
-        name: 'assets',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-    ],
-    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -646,31 +670,6 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'event',
-    name: 'Skimmed',
-    inputs: [
-      {
-        name: 'to',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-      {
-        name: 'assets',
-        type: 'uint256',
-        indexed: false,
-        internalType: 'uint256',
-      },
-      {
-        name: 'shares',
-        type: 'uint256',
-        indexed: false,
-        internalType: 'uint256',
-      },
-    ],
-    anonymous: false,
-  },
-  {
-    type: 'event',
     name: 'Unpaused',
     inputs: [
       {
@@ -700,6 +699,31 @@ export const GoalyVaultAbi = [
       },
       {
         name: 'sharesBurned',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'YieldCollected',
+    inputs: [
+      {
+        name: 'to',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'assets',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+      {
+        name: 'shares',
         type: 'uint256',
         indexed: false,
         internalType: 'uint256',
