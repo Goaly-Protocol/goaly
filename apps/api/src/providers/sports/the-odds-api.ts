@@ -111,9 +111,7 @@ export class TheOddsApiProvider implements SportsDataProvider {
     const params: Record<string, string> = {};
     if (opts?.daysFrom) params.daysFrom = String(opts.daysFrom);
     const result = await this.get<TheOddsScore[]>(`/sports/${sportKey}/scores`, params);
-    const data = result.data
-      .map(mapScore)
-      .filter((entry): entry is ScoreEntry => entry !== null);
+    const data = result.data.map(mapScore).filter((entry): entry is ScoreEntry => entry !== null);
     return { ...result, data };
   }
 

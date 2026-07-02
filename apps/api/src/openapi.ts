@@ -61,7 +61,10 @@ export const openApiDocument = {
             description: 'Matches',
             content: {
               'application/json': {
-                schema: { type: 'object', properties: { matches: { type: 'array', items: Match } } },
+                schema: {
+                  type: 'object',
+                  properties: { matches: { type: 'array', items: Match } },
+                },
               },
             },
           },
@@ -77,7 +80,7 @@ export const openApiDocument = {
     },
     '/predictions': {
       get: {
-        summary: 'List a user\'s predictions',
+        summary: "List a user's predictions",
         parameters: [{ name: 'userId', in: 'query', required: true, schema: { type: 'string' } }],
         responses: { '200': { description: 'Predictions' } },
       },
@@ -100,11 +103,17 @@ export const openApiDocument = {
             },
           },
         },
-        responses: { '201': { description: 'Created' }, '409': { description: 'Predictions closed' } },
+        responses: {
+          '201': { description: 'Created' },
+          '409': { description: 'Predictions closed' },
+        },
       },
     },
     '/admin/sync': {
-      post: { summary: 'Run one credit-aware sync tick', responses: { '200': { description: 'Sync counts' } } },
+      post: {
+        summary: 'Run one credit-aware sync tick',
+        responses: { '200': { description: 'Sync counts' } },
+      },
     },
     '/admin/matches/{id}/result': {
       post: {
@@ -132,11 +141,17 @@ export const openApiDocument = {
       post: {
         summary: 'Settle a finished match and compute pot payouts',
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
-        responses: { '200': { description: 'Settlement summary' }, '409': { description: 'No result yet' } },
+        responses: {
+          '200': { description: 'Settlement summary' },
+          '409': { description: 'No result yet' },
+        },
       },
     },
     '/admin/usage': {
-      get: { summary: 'Odds API credit usage + estimated remaining', responses: { '200': { description: 'Usage' } } },
+      get: {
+        summary: 'Odds API credit usage + estimated remaining',
+        responses: { '200': { description: 'Usage' } },
+      },
     },
   },
   components: { schemas: { Match, Pick } },

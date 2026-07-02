@@ -34,6 +34,12 @@ export interface OddsEntry {
 export interface SportsDataProvider {
   readonly name: string;
   listEvents(sportKey: string): Promise<ProviderResult<Match[]>>;
-  listScores(sportKey: string, opts?: { daysFrom?: 1 | 2 | 3 }): Promise<ProviderResult<ScoreEntry[]>>;
-  listOdds(sportKey: string, opts: { regions: string; markets: string }): Promise<ProviderResult<OddsEntry[]>>;
+  listScores(
+    sportKey: string,
+    opts?: { daysFrom?: 1 | 2 | 3 },
+  ): Promise<ProviderResult<ScoreEntry[]>>;
+  listOdds(
+    sportKey: string,
+    opts: { regions: string; markets: string },
+  ): Promise<ProviderResult<OddsEntry[]>>;
 }

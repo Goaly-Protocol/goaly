@@ -62,7 +62,11 @@ export function createApp(deps: AppDeps): Hono {
   });
 
   app.get('/matches/:id', (c) => {
-    const row = db.select().from(matches).where(eq(matches.id, c.req.param('id'))).get();
+    const row = db
+      .select()
+      .from(matches)
+      .where(eq(matches.id, c.req.param('id')))
+      .get();
     if (!row) throw new HttpError(404, 'match not found');
     return c.json(row);
   });

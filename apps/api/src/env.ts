@@ -18,11 +18,20 @@ const schema = z.object({
   /** Credits held back for settlement (scores) so odds refreshes can't starve it. */
   ODDS_CREDIT_RESERVE: z.coerce.number().int().default(80),
   /** Minimum ms between odds refreshes (odds are expensive: markets × regions). */
-  ODDS_REFRESH_INTERVAL_MS: z.coerce.number().int().default(6 * 60 * 60 * 1000),
+  ODDS_REFRESH_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .default(6 * 60 * 60 * 1000),
   /** Minimum ms between scores polls. */
-  ODDS_SCORES_INTERVAL_MS: z.coerce.number().int().default(30 * 60 * 1000),
+  ODDS_SCORES_INTERVAL_MS: z.coerce
+    .number()
+    .int()
+    .default(30 * 60 * 1000),
   /** Only poll scores for matches whose kickoff + this buffer (s) has passed. */
-  ODDS_SETTLE_BUFFER_S: z.coerce.number().int().default(2 * 60 * 60),
+  ODDS_SETTLE_BUFFER_S: z.coerce
+    .number()
+    .int()
+    .default(2 * 60 * 60),
 
   // Protocol fee on pot payouts, in basis points (250 = 2.5%).
   PROTOCOL_FEE_BPS: z.coerce.number().int().min(0).max(10_000).default(250),

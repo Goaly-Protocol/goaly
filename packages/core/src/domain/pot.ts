@@ -29,7 +29,11 @@ export interface PotDistribution {
  * If there are no winners (or zero total stake), the full distributable amount
  * is returned as `dust` for the caller to roll over or refund.
  */
-export function distributePot(pot: bigint, winners: readonly Stake[], feeBps = 0n): PotDistribution {
+export function distributePot(
+  pot: bigint,
+  winners: readonly Stake[],
+  feeBps = 0n,
+): PotDistribution {
   if (pot < 0n) throw new Error('distributePot: pot must be non-negative');
   if (feeBps < 0n || feeBps > BPS) throw new Error('distributePot: feeBps out of range');
   for (const w of winners) {

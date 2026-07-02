@@ -17,13 +17,14 @@ bun run --filter @goalyield/api dev     # http://localhost:3001
 The golden rule: **user requests never call the odds API.** Every user-facing route reads
 the local SQLite cache; only the background `SyncService.tick()` spends credits.
 
-| Sync step | Endpoint | Cost | When it runs |
-| --- | --- | --- | --- |
-| `syncEvents` | `/events` | **0** (free) | every tick — our source of fixtures + kickoff times |
-| `syncScores` | `/scores` | 1 (2 w/ `daysFrom`) | only when due *and* a match is ≥ `ODDS_SETTLE_BUFFER_S` past kickoff and still unsettled |
-| `syncOdds` | `/odds` | markets × regions | only when due *and* estimated credits > `ODDS_CREDIT_RESERVE` |
+| Sync step    | Endpoint  | Cost                | When it runs                                                                             |
+| ------------ | --------- | ------------------- | ---------------------------------------------------------------------------------------- |
+| `syncEvents` | `/events` | **0** (free)        | every tick — our source of fixtures + kickoff times                                      |
+| `syncScores` | `/scores` | 1 (2 w/ `daysFrom`) | only when due _and_ a match is ≥ `ODDS_SETTLE_BUFFER_S` past kickoff and still unsettled |
+| `syncOdds`   | `/odds`   | markets × regions   | only when due _and_ estimated credits > `ODDS_CREDIT_RESERVE`                            |
 
 Extra guards:
+
 - **Reserve** — odds refreshes are skipped once credits drop near the reserve, so
   settlement (`/scores`) always has budget.
 - **Throttles** — `ODDS_REFRESH_INTERVAL_MS` / `ODDS_SCORES_INTERVAL_MS` cap call frequency.

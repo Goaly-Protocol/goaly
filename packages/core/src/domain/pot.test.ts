@@ -25,11 +25,15 @@ describe('distributePot', () => {
   });
 
   test('conserves value: fee + payouts + dust == pot', () => {
-    const d = distributePot(1_000_000n, [
-      { id: 'a', stake: 1n },
-      { id: 'b', stake: 1n },
-      { id: 'c', stake: 1n },
-    ], 250n);
+    const d = distributePot(
+      1_000_000n,
+      [
+        { id: 'a', stake: 1n },
+        { id: 'b', stake: 1n },
+        { id: 'c', stake: 1n },
+      ],
+      250n,
+    );
     const allocated = sum(d.payouts.map((p) => p.payout));
     expect(d.fee + allocated + d.dust).toBe(1_000_000n);
     expect(d.dust).toBeGreaterThanOrEqual(0n);

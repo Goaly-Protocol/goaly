@@ -17,7 +17,14 @@ function setup() {
   } as unknown as NodeJS.ProcessEnv);
   const { db } = createDb(':memory:');
   const fixtures: Match[] = [
-    { id: 'm1', homeTeam: 'Argentina', awayTeam: 'Brazil', kickoff: 2000, round: 'FINAL', status: 'SCHEDULED' },
+    {
+      id: 'm1',
+      homeTeam: 'Argentina',
+      awayTeam: 'Brazil',
+      kickoff: 2000,
+      round: 'FINAL',
+      status: 'SCHEDULED',
+    },
   ];
   const provider = new MockSportsProvider(fixtures);
   const sync = new SyncService({ db, provider, env, now });

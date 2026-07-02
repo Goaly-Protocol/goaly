@@ -29,7 +29,14 @@ function env(overrides: Record<string, string> = {}) {
   } as unknown as NodeJS.ProcessEnv);
 }
 
-const fixture: Match = { id: 'm1', homeTeam: 'A', awayTeam: 'B', kickoff: 10, round: 'GROUP', status: 'SCHEDULED' };
+const fixture: Match = {
+  id: 'm1',
+  homeTeam: 'A',
+  awayTeam: 'B',
+  kickoff: 10,
+  round: 'GROUP',
+  status: 'SCHEDULED',
+};
 
 describe('SyncService credit strategy', () => {
   test('events sync is free and always runs', async () => {
@@ -43,7 +50,12 @@ describe('SyncService credit strategy', () => {
   test('odds refresh is skipped below the credit reserve (protects settlement)', async () => {
     const { db } = createDb(':memory:');
     const provider = new CountingProvider();
-    const sync = new SyncService({ db, provider, env: env({ ODDS_CREDIT_RESERVE: '80' }), now: () => 1e9 });
+    const sync = new SyncService({
+      db,
+      provider,
+      env: env({ ODDS_CREDIT_RESERVE: '80' }),
+      now: () => 1e9,
+    });
     db.insert(apiUsage).values({ ts: 1, endpoint: 'scores', cost: 1, remaining: 10 }).run();
     expect(await sync.syncOdds()).toBe(0);
     expect(provider.odds).toBe(0); // never called
@@ -52,14 +64,25 @@ describe('SyncService credit strategy', () => {
   test('odds refresh runs when credits are healthy', async () => {
     const { db } = createDb(':memory:');
     const provider = new CountingProvider();
-    const sync = new SyncService({ db, provider, env: env({ ODDS_CREDIT_RESERVE: '80' }), now: () => 1e9 });
+    const sync = new SyncService({
+      db,
+      provider,
+      env: env({ ODDS_CREDIT_RESERVE: '80' }),
+      now: () => 1e9,
+    });
     await sync.syncOdds(); // no usage rows => full monthly budget assumed
     expect(provider.odds).toBe(1);
   });
 
   test('extra API keys multiply the budget headroom', () => {
     const { db } = createDb(':memory:');
-    const sync = new SyncService({ db, provider: new CountingProvider(), env: env(), keyCount: 3, now: () => 1 });
+    const sync = new SyncService({
+      db,
+      provider: new CountingProvider(),
+      env: env(),
+      keyCount: 3,
+      now: () => 1,
+    });
     db.insert(apiUsage).values({ ts: 1, endpoint: 'odds', cost: 1, remaining: 10 }).run();
     expect(sync.creditsRemaining()).toBe(10 + 2 * 500);
   });

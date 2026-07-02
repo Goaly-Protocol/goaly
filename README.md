@@ -2,7 +2,7 @@
 
 > **No-loss football prediction, powered by self-repaying yield.**
 > Predict the tournament. Wrong — you lose nothing. Right — you win real USD₮.
-> You only ever wager your *future interest*, never your principal.
+> You only ever wager your _future interest_, never your principal.
 
 Built for the **[Tether Developers Cup](https://dorahacks.io/hackathon/tether-developers-cup)** · **WDK** track (self-custodial wallets) · theme: football & the global tournament moment.
 
@@ -18,20 +18,20 @@ Built for the **[Tether Developers Cup](https://dorahacks.io/hackathon/tether-de
 
 Worst case: you forgo some yield. Best case: you win real USD₮. Your principal always comes back whole.
 
-> ⚠️ "Principal safe" means safe from *game losses*, not from smart-contract / protocol risk. See the risk disclosure in the app and docs.
+> ⚠️ "Principal safe" means safe from _game losses_, not from smart-contract / protocol risk. See the risk disclosure in the app and docs.
 
 ## Tech stack
 
-| Layer | Tech |
-| --- | --- |
-| Wallet / signing | **WDK** (`@tetherto/wdk`) — self-custodial |
-| Asset | **USDT0** (Tether's omnichain USD₮, LayerZero OFT) |
-| Yield | **Morpho** MetaMorpho vault (ERC-4626) on **Arbitrum** |
-| Contracts | **Foundry** (Solidity) — `packages/contracts` |
-| Shared domain logic | **`@goalyield/core`** — pure TS, fully unit-tested |
-| API | **Bun + Hono + Drizzle + SQLite** — `apps/api` |
-| Indexer | **Ponder** — `apps/indexer` |
-| Web | **Vite + React 19 + HeroUI** — `apps/goaly-web` |
+| Layer               | Tech                                                   |
+| ------------------- | ------------------------------------------------------ |
+| Wallet / signing    | **WDK** (`@tetherto/wdk`) — self-custodial             |
+| Asset               | **USDT0** (Tether's omnichain USD₮, LayerZero OFT)     |
+| Yield               | **Morpho** MetaMorpho vault (ERC-4626) on **Arbitrum** |
+| Contracts           | **Foundry** (Solidity) — `packages/contracts`          |
+| Shared domain logic | **`@goalyield/core`** — pure TS, fully unit-tested     |
+| API                 | **Bun + Hono + Drizzle + SQLite** — `apps/api`         |
+| Indexer             | **Ponder** — `apps/indexer`                            |
+| Web                 | **Vite + React 19 + HeroUI** — `apps/goaly-web`        |
 
 ## Monorepo layout
 
