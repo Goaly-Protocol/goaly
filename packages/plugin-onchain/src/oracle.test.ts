@@ -43,13 +43,19 @@ describe('oracle actions', () => {
 
   test('settleMarket maps the result to the Solidity enum', async () => {
     const w = await wallet();
-    await settleMarket(w, { pool: POOL, marketId: marketIdFor('m1'), result: 'HOME' });
+    await settleMarket(w, {
+      pool: POOL,
+      marketId: marketIdFor('m1'),
+      result: 'HOME',
+      winningOddsBps: 30_000n,
+    });
     const decoded = decodeFunctionData({
       abi: predictionPoolOracleAbi,
       data: w.sentTxs[0]?.data as Hex,
     });
     expect(decoded.functionName).toBe('settleMarket');
     expect(Number(decoded.args?.[1])).toBe(0); // HOME
+    expect(decoded.args?.[2]).toBe(30_000n); // odds ×10_000
   });
 
   test('fundPrize approves USDT0 then funds the market', async () => {
