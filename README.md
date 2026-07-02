@@ -28,7 +28,7 @@ Worst case: you forgo some yield. Best case: you win real USD₮. Your principal
 | Asset               | **USDT0** (Tether's omnichain USD₮, LayerZero OFT)     |
 | Yield               | **Morpho** MetaMorpho vault (ERC-4626) on **Arbitrum** |
 | Contracts           | **Foundry** (Solidity) — `packages/contracts`          |
-| Shared domain logic | **`@goaly/core`** — pure TS, fully unit-tested     |
+| Shared domain logic | **`@goaly/core`** — pure TS, fully unit-tested         |
 | API                 | **Bun + Hono + Drizzle + SQLite** — `apps/api`         |
 | Indexer             | **Ponder** — `apps/indexer`                            |
 | Web                 | **Vite + React 19 + HeroUI** — `apps/goaly-web`        |
