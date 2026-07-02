@@ -1,5 +1,5 @@
 import WalletManagerEvm, { type WalletAccountEvm } from '@tetherto/wdk-wallet-evm';
-import type { SendParams, WalletAccount, WalletProvider } from './types';
+import type { SendParams, TxRequest, WalletAccount, WalletProvider } from './types';
 
 export interface WdkWalletOptions {
   /** EVM RPC URL. Not needed for offline address derivation / signing. */
@@ -73,6 +73,16 @@ export class WdkWallet implements WalletProvider {
       return hash;
     }
     const { hash } = await account.sendTransaction({ to: params.to, value: params.amount });
+    return hash;
+  }
+
+  async sendTransaction(tx: TxRequest): Promise<string> {
+    const account = await this.requireAccount();
+    const { hash } = await account.sendTransaction({
+      to: tx.to,
+      value: tx.value ?? 0n,
+      ...(tx.data ? { data: tx.data } : {}),
+    });
     return hash;
   }
 

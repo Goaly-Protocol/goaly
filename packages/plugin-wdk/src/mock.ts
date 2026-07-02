@@ -1,8 +1,10 @@
-import type { SendParams, WalletAccount, WalletProvider } from './types';
+import type { SendParams, TxRequest, WalletAccount, WalletProvider } from './types';
 
 /** Deterministic in-memory wallet for local dev and tests (no real keys, no network). */
 export class MockWallet implements WalletProvider {
   readonly name = 'mock';
+  /** Records raw transactions sent, for test assertions. */
+  readonly sentTxs: TxRequest[] = [];
   private account: WalletAccount | null = null;
   private txCounter = 0;
   private walletCounter = 0;
@@ -41,6 +43,13 @@ export class MockWallet implements WalletProvider {
 
   async send(_params: SendParams): Promise<string> {
     if (!this.account) throw new Error('MockWallet: no account');
+    this.txCounter += 1;
+    return `0x${this.txCounter.toString(16).padStart(64, '0')}`;
+  }
+
+  async sendTransaction(tx: TxRequest): Promise<string> {
+    if (!this.account) throw new Error('MockWallet: no account');
+    this.sentTxs.push(tx);
     this.txCounter += 1;
     return `0x${this.txCounter.toString(16).padStart(64, '0')}`;
   }
