@@ -36,6 +36,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.7
+      - name: Install node deps (LayerZero packages for remappings)
+        run: bun install --frozen-lockfile
       - uses: foundry-rs/foundry-toolchain@v1
       - name: Build
         working-directory: packages/contracts
