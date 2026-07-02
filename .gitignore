@@ -1,0 +1,38 @@
+# dependencies
+node_modules/
+
+# build output
+dist/
+out/
+*.tsbuildinfo
+.turbo/
+
+# foundry
+packages/contracts/out/
+packages/contracts/cache/
+packages/contracts/cache_forge/
+packages/contracts/broadcast/
+packages/contracts/lib/
+
+# ponder
+.ponder/
+generated/
+
+# databases
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# env
+.env
+.env.local
+.env.*.local
+
+# coverage
+coverage/
+lcov.info
+
+# misc
+.DS_Store
+*.log

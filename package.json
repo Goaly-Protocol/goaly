@@ -1,0 +1,34 @@
+{
+  "name": "goalyield",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "GoalYield — no-loss football prediction powered by self-repaying yield (Tether Developers Cup, WDK track)",
+  "license": "Apache-2.0",
+  "packageManager": "bun@1.2.7",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "test:unit": "turbo run test:unit",
+    "test:integration": "turbo run test:integration",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "format": "biome format --write .",
+    "check": "biome check --write .",
+    "contracts:build": "bun run --filter @goalyield/contracts build",
+    "contracts:test": "bun run --filter @goalyield/contracts test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2"
+  }
+}
