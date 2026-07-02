@@ -109,6 +109,17 @@ export const openApiDocument = {
         },
       },
     },
+    '/positions/{address}': {
+      get: {
+        summary:
+          'On-chain vault position for an address (principal, debt, remainingDebt, withdrawable)',
+        parameters: [{ name: 'address', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'Position' },
+          '501': { description: 'GOALY_VAULT_ADDRESS not configured' },
+        },
+      },
+    },
     '/admin/sync': {
       post: {
         summary: 'Run one credit-aware sync tick',
@@ -144,6 +155,17 @@ export const openApiDocument = {
         responses: {
           '200': { description: 'Settlement summary' },
           '409': { description: 'No result yet' },
+        },
+      },
+    },
+    '/admin/matches/{id}/settle-onchain': {
+      post: {
+        summary: 'Settle the on-chain PredictionPool market from the finished match result',
+        parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          '200': { description: 'On-chain settlement tx (matchId, marketId, result, txHash)' },
+          '409': { description: 'No result yet' },
+          '501': { description: 'ORACLE_PK not configured' },
         },
       },
     },
