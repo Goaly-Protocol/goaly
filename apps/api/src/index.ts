@@ -1,5 +1,5 @@
 import { ARBITRUM, type Outcome } from '@goaly/core';
-import { marketIdFor, settleMarket } from '@goaly/plugin-onchain';
+import { createMarket, marketIdFor, settleMarket } from '@goaly/plugin-onchain';
 import { createSportsProvider, parseOddsApiKeys } from '@goaly/plugin-odds';
 import { KeyWallet } from '@goaly/plugin-wdk';
 import { createApp } from './app';
@@ -16,13 +16,26 @@ const keyCount = Math.max(1, oddsKeys.length);
 
 // When an oracle key is configured, finished matches auto-settle their on-chain market.
 const oraclePk = env.ORACLE_PK;
-const settleOnchain = oraclePk
+const oracleWallet = oraclePk
+  ? new KeyWallet(oraclePk as `0x${string}`, { provider: env.ARBITRUM_RPC_URL })
+  : undefined;
+
+const settleOnchain = oracleWallet
   ? async (matchId: string, result: Outcome) => {
-      const wallet = new KeyWallet(oraclePk as `0x${string}`, { provider: env.ARBITRUM_RPC_URL });
-      await settleMarket(wallet, {
+      await settleMarket(oracleWallet, {
         pool: ARBITRUM.goaly.predictionPool as `0x${string}`,
         marketId: marketIdFor(matchId),
         result,
+      });
+    }
+  : undefined;
+
+const createMarketOnchain = oracleWallet
+  ? async (matchId: string, closeTime: number) => {
+      await createMarket(oracleWallet, {
+        pool: ARBITRUM.goaly.predictionPool as `0x${string}`,
+        marketId: marketIdFor(matchId),
+        closeTime: BigInt(closeTime),
       });
     }
   : undefined;
@@ -33,6 +46,7 @@ const sync = new SyncService({
   env,
   keyCount,
   ...(settleOnchain ? { settleOnchain } : {}),
+  ...(createMarketOnchain ? { createMarketOnchain } : {}),
 });
 const predictions = new PredictionService(db, BigInt(env.PROTOCOL_FEE_BPS));
 const app = createApp({ db, env, sync, predictions });

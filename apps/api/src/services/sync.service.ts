@@ -14,6 +14,8 @@ export interface SyncDeps {
   now?: () => number;
   /** Optional hook: settle the on-chain market when a match finishes. */
   settleOnchain?: (matchId: string, result: Outcome) => Promise<void>;
+  /** Optional hook: open the on-chain market when a new fixture first appears. */
+  createMarketOnchain?: (matchId: string, closeTime: number) => Promise<void>;
 }
 
 /**
@@ -55,6 +57,11 @@ export class SyncService {
     const { data, quota } = await provider.listEvents(env.ODDS_SPORT_KEY);
     const ts = this.now();
     for (const match of data) {
+      const known = db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(eq(matches.id, match.id))
+        .get();
       db.insert(matches)
         .values({
           id: match.id,
@@ -76,6 +83,7 @@ export class SyncService {
           },
         })
         .run();
+      if (!known) await this.createMarketOnchainSafe(match.id, match.kickoff);
     }
     this.record('events', quota);
     return data.length;
@@ -161,6 +169,16 @@ export class SyncService {
       await this.deps.settleOnchain(matchId, resolveOutcome(result));
     } catch (error) {
       console.error(`[sync] on-chain settle failed for ${matchId}`, error);
+    }
+  }
+
+  /** Best-effort on-chain market creation — never breaks the sync loop. */
+  private async createMarketOnchainSafe(matchId: string, closeTime: number): Promise<void> {
+    if (!this.deps.createMarketOnchain) return;
+    try {
+      await this.deps.createMarketOnchain(matchId, closeTime);
+    } catch (error) {
+      console.error(`[sync] on-chain createMarket failed for ${matchId}`, error);
     }
   }
 
