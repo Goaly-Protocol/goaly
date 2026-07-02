@@ -15,6 +15,7 @@ import { z } from 'zod';
 import type { DB } from './db/client';
 import { apiUsage, matches, oddsCache, predictions } from './db/schema';
 import type { Env } from './env';
+import { toBracketsViewer } from './lib/brackets-viewer';
 import { HttpError } from './lib/errors';
 import {
   closingWinningOddsBps,
@@ -169,6 +170,12 @@ export function createApp(deps: AppDeps): Hono {
         })),
       })),
     });
+  });
+
+  // brackets-viewer.js data model (real single-elimination bracket render).
+  app.get('/bracket/viewer', async (c) => {
+    const rounds = await standings.bracket();
+    return c.json(toBracketsViewer(rounds, (team) => resolveTeam(team)?.code ?? team));
   });
 
   // ── Yield Agent (autonomous Morpho rebalancing via a WDK agent wallet) ──
