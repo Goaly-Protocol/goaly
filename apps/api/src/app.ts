@@ -142,13 +142,27 @@ export function createApp(deps: AppDeps): Hono {
     return c.json(withMatchDetail(db, row));
   });
 
-  // ── Standings (FIFA group tables — free FIFA data API, cached) ──
+  // ── Standings + bracket (FIFA data API — free, cached) ──
   app.get('/standings', async (c) => {
     const groups = await standings.get();
     return c.json({
       groups: groups.map((g) => ({
         ...g,
         rows: g.rows.map((r) => ({ ...r, teamMeta: resolveTeam(r.team) })),
+      })),
+    });
+  });
+
+  app.get('/bracket', async (c) => {
+    const rounds = await standings.bracket();
+    return c.json({
+      rounds: rounds.map((round) => ({
+        ...round,
+        matches: round.matches.map((m) => ({
+          ...m,
+          homeMeta: m.home ? resolveTeam(m.home) : null,
+          awayMeta: m.away ? resolveTeam(m.away) : null,
+        })),
       })),
     });
   });

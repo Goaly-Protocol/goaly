@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { computeStandings, type FifaMatch } from '../src/lib/standings';
+import { computeBracket, computeStandings, type FifaMatch } from '../src/lib/standings';
 import { StandingsService } from '../src/services/standings.service';
 
 const GROUP_STAGE = '289273';
@@ -56,6 +56,37 @@ describe('computeStandings', () => {
 
   test('empty input yields no groups', () => {
     expect(computeStandings([], GROUP_STAGE)).toEqual([]);
+  });
+});
+
+describe('computeBracket', () => {
+  const ko = (
+    stage: string,
+    home: string,
+    away: string,
+    hs: number | null,
+    as: number | null,
+  ): FifaMatch => ({
+    IdStage: stage,
+    Home: { TeamName: [{ Description: home }] },
+    Away: { TeamName: [{ Description: away }] },
+    HomeTeamScore: hs,
+    AwayTeamScore: as,
+  });
+
+  test('groups knockout ties by round and skips empty rounds', () => {
+    const rounds = computeBracket([
+      ko('289287', 'Spain', 'Croatia', 2, 1), // Round of 32
+      ko('289292', 'Brazil', 'France', null, null), // Final (still TBD)
+      ko(GROUP_STAGE, 'X', 'Y', 1, 0), // group stage → ignored
+    ]);
+    expect(rounds.map((r) => r.name)).toEqual(['Round of 32', 'Final']);
+    expect(rounds[0]?.matches[0]).toMatchObject({
+      home: 'Spain',
+      away: 'Croatia',
+      homeScore: 2,
+      awayScore: 1,
+    });
   });
 });
 

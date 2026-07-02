@@ -23,7 +23,7 @@ interface FifaTeam {
   Abbreviation?: string;
 }
 
-/** Subset of a FIFA `/calendar/matches` result we use to build standings. */
+/** Subset of a FIFA `/calendar/matches` result we use to build standings + bracket. */
 export interface FifaMatch {
   IdStage?: string;
   IdGroup?: string;
@@ -32,6 +32,8 @@ export interface FifaMatch {
   Away?: FifaTeam | null;
   HomeTeamScore?: number | null;
   AwayTeamScore?: number | null;
+  HomeTeamPenaltyScore?: number | null;
+  AwayTeamPenaltyScore?: number | null;
 }
 
 function desc(arr?: Array<{ Description?: string }>): string {
@@ -103,4 +105,53 @@ export function computeStandings(matches: FifaMatch[], groupStageId: string): St
       ),
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** One knockout tie (team names, may be empty when the bracket slot is still TBD). */
+export interface BracketMatch {
+  home: string;
+  away: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  homePens: number | null;
+  awayPens: number | null;
+}
+
+/** A knockout round with its ties. */
+export interface BracketRound {
+  id: string;
+  name: string;
+  matches: BracketMatch[];
+}
+
+/** FIFA World Cup 2026 knockout stage IDs, in bracket order. */
+const KNOCKOUT_ROUNDS = [
+  { id: '289287', name: 'Round of 32' },
+  { id: '289288', name: 'Round of 16' },
+  { id: '289289', name: 'Quarter-finals' },
+  { id: '289290', name: 'Semi-finals' },
+  { id: '289291', name: 'Third place' },
+  { id: '289292', name: 'Final' },
+] as const;
+
+function score(n: number | null | undefined): number | null {
+  return typeof n === 'number' ? n : null;
+}
+
+/** Group knockout fixtures into rounds (R32 → Final). Rounds with no fixtures are omitted. */
+export function computeBracket(matches: FifaMatch[]): BracketRound[] {
+  return KNOCKOUT_ROUNDS.map((round) => ({
+    id: round.id,
+    name: round.name,
+    matches: matches
+      .filter((m) => m.IdStage === round.id)
+      .map((m) => ({
+        home: desc(m.Home?.TeamName ?? undefined),
+        away: desc(m.Away?.TeamName ?? undefined),
+        homeScore: score(m.HomeTeamScore),
+        awayScore: score(m.AwayTeamScore),
+        homePens: score(m.HomeTeamPenaltyScore),
+        awayPens: score(m.AwayTeamPenaltyScore),
+      })),
+  })).filter((round) => round.matches.length > 0);
 }
