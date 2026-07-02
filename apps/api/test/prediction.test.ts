@@ -3,7 +3,7 @@ import { describe, expect, test } from 'bun:test';
 import { createApp } from '../src/app';
 import { createDb } from '../src/db/client';
 import { loadEnv } from '../src/env';
-import { MockSportsProvider } from '../src/providers/sports';
+import { MockSportsProvider } from '@goaly/plugin-odds';
 import { PredictionService } from '../src/services/prediction.service';
 import { SyncService } from '../src/services/sync.service';
 

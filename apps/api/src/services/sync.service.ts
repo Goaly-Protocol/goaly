@@ -2,7 +2,7 @@ import { and, desc, eq, lt } from 'drizzle-orm';
 import type { Env } from '../env';
 import type { DB } from '../db/client';
 import { apiUsage, matches, oddsCache, syncState } from '../db/schema';
-import type { QuotaInfo, SportsDataProvider } from '../providers/sports';
+import type { QuotaInfo, SportsDataProvider } from '@goaly/plugin-odds';
 
 export interface SyncDeps {
   db: DB;
