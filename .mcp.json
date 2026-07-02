@@ -3,6 +3,10 @@
     "layerzero-docs": {
       "type": "http",
       "url": "https://docs.layerzero.network/mcp"
+    },
+    "wdk": {
+      "command": "npx",
+      "args": ["-y", "@tetherto/wdk-mcp-toolkit", "serve"]
     }
   }
 }
