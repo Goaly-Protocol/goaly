@@ -17,6 +17,7 @@
         "@goaly/plugin-odds": "workspace:*",
         "@goaly/plugin-onchain": "workspace:*",
         "@goaly/plugin-teams": "workspace:*",
+        "@goaly/plugin-wdk": "workspace:*",
         "@scalar/hono-api-reference": "^0.9.0",
         "drizzle-orm": "^0.38.3",
         "hono": "^4.6.14",
@@ -81,6 +82,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@tetherto/wdk-wallet-evm": "^1.0.0-beta.14",
+        "viem": "^2.21.0",
       },
       "devDependencies": {
         "@types/bun": "latest",
