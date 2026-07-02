@@ -11,6 +11,10 @@ export const matches = sqliteTable('matches', {
   status: text('status').notNull().default('SCHEDULED'),
   homeScore: integer('home_score'),
   awayScore: integer('away_score'),
+  // Closing h2h odds (×10_000 bps), frozen at kickoff — the reference for the on-chain boost.
+  closingHomeBps: integer('closing_home_bps'),
+  closingDrawBps: integer('closing_draw_bps'),
+  closingAwayBps: integer('closing_away_bps'),
   updatedAt: integer('updated_at').notNull(),
 });
 

@@ -1,8 +1,9 @@
 import { type MatchResult, type Outcome, resolveOutcome } from '@goaly/core';
-import { and, desc, eq, lt } from 'drizzle-orm';
+import { and, desc, eq, gt, isNull, lt } from 'drizzle-orm';
 import type { Env } from '../env';
 import type { DB } from '../db/client';
 import { apiUsage, matches, oddsCache, syncState } from '../db/schema';
+import { parseH2hOdds } from '../lib/odds';
 import type { QuotaInfo, SportsDataProvider } from '@goaly/plugin-odds';
 
 export interface SyncDeps {
@@ -44,11 +45,12 @@ export class SyncService {
     return currentKey + spareKeys * env.ODDS_MONTHLY_CREDITS;
   }
 
-  async tick(): Promise<{ events: number; settled: number; odds: number }> {
+  async tick(): Promise<{ events: number; settled: number; odds: number; frozen: number }> {
     const events = await this.syncEvents();
     const settled = await this.syncScores();
     const odds = await this.syncOdds();
-    return { events, settled, odds };
+    const frozen = this.freezeClosingOdds();
+    return { events, settled, odds, frozen };
   }
 
   /** FREE: refresh fixtures + kickoff times. */
@@ -129,6 +131,25 @@ export class SyncService {
     const { db, provider, env } = this.deps;
     if (!this.due('odds', env.ODDS_REFRESH_INTERVAL_MS)) return 0;
 
+    // Only spend credits when a match is within the pre-kickoff window — odds are meaningful once
+    // lineups drop (~1h out), and matches already kicked off never need odds (betting is closed).
+    const nowS = Math.floor(this.now() / 1000);
+    const approaching = db
+      .select({ id: matches.id })
+      .from(matches)
+      .where(
+        and(
+          eq(matches.status, 'SCHEDULED'),
+          gt(matches.kickoff, nowS),
+          lt(matches.kickoff, nowS + env.ODDS_FETCH_BEFORE_S),
+        ),
+      )
+      .all();
+    if (approaching.length === 0) {
+      this.touch('odds');
+      return 0;
+    }
+
     const remaining = this.creditsRemaining();
     if (remaining <= env.ODDS_CREDIT_RESERVE) {
       console.warn(
@@ -160,6 +181,37 @@ export class SyncService {
     this.record('odds', quota);
     this.touch('odds');
     return data.length;
+  }
+
+  /**
+   * Freeze closing odds for matches that have kicked off (betting closed): copy the last cached h2h
+   * odds onto the match as ×10_000 bps. This is the deterministic reference the on-chain boost uses
+   * at settlement — no further odds fetch is needed after kickoff. Returns how many were frozen.
+   */
+  freezeClosingOdds(): number {
+    const { db } = this.deps;
+    const nowS = Math.floor(this.now() / 1000);
+    const closing = db
+      .select()
+      .from(matches)
+      .where(and(lt(matches.kickoff, nowS), isNull(matches.closingHomeBps)))
+      .all();
+    let frozen = 0;
+    for (const match of closing) {
+      const cached = db.select().from(oddsCache).where(eq(oddsCache.matchId, match.id)).get();
+      const odds = cached ? parseH2hOdds(cached.data, match.homeTeam, match.awayTeam) : null;
+      if (!odds) continue;
+      db.update(matches)
+        .set({
+          closingHomeBps: Math.round(odds.home * 10_000),
+          closingDrawBps: Math.round(odds.draw * 10_000),
+          closingAwayBps: Math.round(odds.away * 10_000),
+        })
+        .where(eq(matches.id, match.id))
+        .run();
+      frozen += 1;
+    }
+    return frozen;
   }
 
   /** Best-effort on-chain settlement — never breaks the sync loop. */

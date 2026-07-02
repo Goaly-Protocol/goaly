@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'bun:test';
-import { parseH2hOdds, winningOddsBps } from '../src/lib/odds';
+import { closingWinningOddsBps, frozenOdds, parseH2hOdds, winningOddsBps } from '../src/lib/odds';
 
 const bookmakers = JSON.stringify([
   {
@@ -51,5 +51,21 @@ describe('winningOddsBps', () => {
 
   test('defaults to 10_000 (no boost) when odds are missing', () => {
     expect(winningOddsBps(null, 'HOME')).toBe(10_000n);
+  });
+});
+
+describe('frozen closing odds', () => {
+  const frozen = { closingHomeBps: 14_500, closingDrawBps: 52_300, closingAwayBps: 104_400 };
+  const unfrozen = { closingHomeBps: null, closingDrawBps: null, closingAwayBps: null };
+
+  test('frozenOdds converts bps to decimals, null until frozen', () => {
+    expect(frozenOdds(frozen)).toEqual({ home: 1.45, draw: 5.23, away: 10.44 });
+    expect(frozenOdds(unfrozen)).toBeNull();
+  });
+
+  test('closingWinningOddsBps picks the winning outcome, null when not frozen', () => {
+    expect(closingWinningOddsBps(frozen, 'AWAY')).toBe(104_400n);
+    expect(closingWinningOddsBps(frozen, 'HOME')).toBe(14_500n);
+    expect(closingWinningOddsBps(unfrozen, 'HOME')).toBeNull();
   });
 });

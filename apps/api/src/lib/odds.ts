@@ -54,3 +54,31 @@ export function winningOddsBps(odds: MatchOdds | null, result: 'HOME' | 'DRAW' |
   if (!Number.isFinite(decimal) || decimal <= 1) return 10_000n;
   return BigInt(Math.round(decimal * 10_000));
 }
+
+/** A match's frozen closing odds (×10_000 bps, null until frozen at kickoff). */
+export interface ClosingOdds {
+  closingHomeBps: number | null;
+  closingDrawBps: number | null;
+  closingAwayBps: number | null;
+}
+
+/** Frozen closing odds as decimals, or null when not yet frozen. */
+export function frozenOdds(m: ClosingOdds): MatchOdds | null {
+  if (m.closingHomeBps == null || m.closingDrawBps == null || m.closingAwayBps == null) return null;
+  return {
+    home: m.closingHomeBps / 10_000,
+    draw: m.closingDrawBps / 10_000,
+    away: m.closingAwayBps / 10_000,
+  };
+}
+
+/** Frozen winning-outcome odds in bps, or null when not frozen (caller falls back to live odds). */
+export function closingWinningOddsBps(
+  m: ClosingOdds,
+  result: 'HOME' | 'DRAW' | 'AWAY',
+): bigint | null {
+  const bps =
+    result === 'HOME' ? m.closingHomeBps : result === 'AWAY' ? m.closingAwayBps : m.closingDrawBps;
+  if (bps == null) return null;
+  return bps > 10_000 ? BigInt(bps) : 10_000n;
+}
