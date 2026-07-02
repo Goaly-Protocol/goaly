@@ -1,61 +1,45 @@
 import type { Address, PublicClient } from 'viem';
 
-/** Minimal read ABI for GoalyVault (see @goaly/contracts). */
+/** Read ABI for GoalyVault (goUSDT ERC-20 + pool views). */
 export const goalyVaultAbi = [
   {
     type: 'function',
-    name: 'principalOf',
+    name: 'balanceOf',
     stateMutability: 'view',
-    inputs: [{ name: 'user', type: 'address' }],
+    inputs: [{ name: 'account', type: 'address' }],
     outputs: [{ type: 'uint256' }],
   },
   {
     type: 'function',
-    name: 'debtOf',
+    name: 'totalAssets',
     stateMutability: 'view',
-    inputs: [{ name: 'user', type: 'address' }],
+    inputs: [],
     outputs: [{ type: 'uint256' }],
   },
   {
     type: 'function',
-    name: 'yieldOf',
+    name: 'accruedYield',
     stateMutability: 'view',
-    inputs: [{ name: 'user', type: 'address' }],
+    inputs: [],
     outputs: [{ type: 'uint256' }],
   },
 ] as const;
 
-export interface VaultReads {
-  principal: bigint;
-  debt: bigint;
-  yieldAccrued: bigint;
-}
-
-/** Read a user's raw vault account (principal, debt, accrued yield) on-chain. */
-export async function readVaultAccount(
+/** A user's goUSDT balance — their redeemable USDT0 principal (1:1). */
+export async function readGoUsdtBalance(
   client: PublicClient,
   vault: Address,
   user: Address,
-): Promise<VaultReads> {
-  const [principal, debt, yieldAccrued] = await Promise.all([
-    client.readContract({
-      address: vault,
-      abi: goalyVaultAbi,
-      functionName: 'principalOf',
-      args: [user],
-    }),
-    client.readContract({
-      address: vault,
-      abi: goalyVaultAbi,
-      functionName: 'debtOf',
-      args: [user],
-    }),
-    client.readContract({
-      address: vault,
-      abi: goalyVaultAbi,
-      functionName: 'yieldOf',
-      args: [user],
-    }),
-  ]);
-  return { principal, debt, yieldAccrued };
+): Promise<bigint> {
+  return client.readContract({
+    address: vault,
+    abi: goalyVaultAbi,
+    functionName: 'balanceOf',
+    args: [user],
+  });
+}
+
+/** Protocol yield currently accrued in the vault (harvestable to fund prizes). */
+export async function readAccruedYield(client: PublicClient, vault: Address): Promise<bigint> {
+  return client.readContract({ address: vault, abi: goalyVaultAbi, functionName: 'accruedYield' });
 }

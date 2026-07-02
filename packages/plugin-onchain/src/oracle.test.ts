@@ -74,7 +74,7 @@ describe('oracle actions', () => {
 
   test('fundPrizeFromYield harvests vault yield then funds the market (3 txs)', async () => {
     const w = await wallet();
-    const { collectHash, approveHash, fundHash } = await fundPrizeFromYield(w, {
+    const { harvestHash, approveHash, fundHash } = await fundPrizeFromYield(w, {
       vault: VAULT,
       pool: POOL,
       usdt0: USDT0,
@@ -82,10 +82,10 @@ describe('oracle actions', () => {
       amount: 5_000_000n,
     });
     expect(w.sentTxs).toHaveLength(3);
-    expect(w.sentTxs[0]?.to).toBe(VAULT); // collectYield(address)
+    expect(w.sentTxs[0]?.to).toBe(VAULT); // harvestYield(address)
     expect(w.sentTxs[0]?.data).toMatch(/^0x[0-9a-f]{72}$/);
     expect(w.sentTxs[1]?.to).toBe(USDT0); // approve
     expect(w.sentTxs[2]?.to).toBe(POOL); // fundPrize
-    expect(new Set([collectHash, approveHash, fundHash]).size).toBe(3);
+    expect(new Set([harvestHash, approveHash, fundHash]).size).toBe(3);
   });
 });
