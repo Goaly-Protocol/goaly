@@ -52,7 +52,11 @@ describe('toBracketsViewer', () => {
     expect(r32m1?.opponent1?.id).toBe(spainId ?? -1);
     expect(r32m1?.opponent1?.result).toBe('win');
     expect(r32m1?.opponent2?.result).toBe('loss');
-    expect(data.matches[1]?.opponent1?.result).toBe('win'); // Brazil win on penalties
+    expect(r32m1?.opponent1?.score).toBe(2); // plain score when no shootout
+    // Brazil 1-1 Japan, won 4-3 on penalties → shootout in parens before the goal score.
+    expect(data.matches[1]?.opponent1?.result).toBe('win');
+    expect(data.matches[1]?.opponent1?.score).toBe('(4) 1');
+    expect(data.matches[1]?.opponent2?.score).toBe('(3) 1');
   });
 
   test('TBD final has null opponents and waiting status', () => {
