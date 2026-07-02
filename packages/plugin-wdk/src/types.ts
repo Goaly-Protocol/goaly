@@ -13,6 +13,13 @@ export interface SendParams {
   token?: string;
 }
 
+/** A raw transaction request for contract calls (e.g. ERC-20 approve, vault deposit). */
+export interface TxRequest {
+  to: string;
+  data?: string;
+  value?: bigint;
+}
+
 /**
  * Abstraction over a self-custodial wallet. The MVP ships a deterministic mock; the production
  * implementation is backed by Tether's WDK (`@tetherto/wdk`) in the app, where keys stay on-device.
@@ -25,4 +32,6 @@ export interface WalletProvider {
   signMessage(message: string): Promise<string>;
   /** Sign + broadcast a transfer; returns the tx hash. */
   send(params: SendParams): Promise<string>;
+  /** Sign + broadcast a raw contract call (e.g. ERC-20 approve, vault deposit); returns the tx hash. */
+  sendTransaction(tx: TxRequest): Promise<string>;
 }

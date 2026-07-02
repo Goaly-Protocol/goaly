@@ -59,6 +59,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@goaly/core": "workspace:*",
+        "@goaly/plugin-wdk": "workspace:*",
         "viem": "^2.21.0",
       },
       "devDependencies": {
