@@ -14,6 +14,9 @@ const schema = z.object({
   /** Oracle private key for on-chain market settlement (server-side, ORACLE_ROLE). */
   ORACLE_PK: z.string().optional(),
 
+  /** OpenAI key — enables the yield agent's LLM reasoning layer. Optional. */
+  OPENAI_KEY: z.string().optional(),
+
   // The Odds API (https://the-odds-api.com). Optional — falls back to the mock provider.
   // Provide ONE key via THE_ODDS_API_KEY, or MANY (comma-separated) via THE_ODDS_API_KEYS
   // for rotation/fallback. Each free key = 500 credits/month, so N keys ≈ N×500 headroom.

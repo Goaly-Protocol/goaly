@@ -16,6 +16,7 @@ import { CrestService } from './services/crest.service';
 import { closingWinningOddsBps, parseH2hOdds, winningOddsBps } from './lib/odds';
 import { PredictionService } from './services/prediction.service';
 import { SyncService } from './services/sync.service';
+import { createBetIndexer } from './services/bet-indexer';
 import { YieldAgentService } from './services/yield-agent.service';
 
 const env = loadEnv();
@@ -80,12 +81,24 @@ const yieldAgent = new YieldAgentService({
   ],
   params: { minApyGainBps: env.AGENT_MIN_APY_GAIN_BPS, minTvlUsd: env.AGENT_MIN_TVL_USD },
   ...(oracleWallet ? { wallet: oracleWallet } : {}),
+  ...(env.OPENAI_KEY ? { openaiKey: env.OPENAI_KEY } : {}),
   autoExecute: env.AGENT_AUTO_REBALANCE,
 });
 
 // Club crests (national teams use flags directly); resolved in the background + cached.
 const crests = new CrestService(db);
 const app = createApp({ db, env, sync, predictions, yieldAgent, crests });
+
+// Index on-chain bets (PredictionPlaced) into the DB so a wallet's bets always show, even if the
+// client's off-chain record POST failed. The chain is the source of truth.
+const indexBets = createBetIndexer(db, env.ARBITRUM_RPC_URL);
+const BET_TICK_MS = 20 * 1000;
+indexBets()
+  .then((n) => n && console.log(`[bets] indexed ${n} on-chain bet(s)`))
+  .catch((error) => console.error('[bets] initial index failed', error));
+setInterval(() => {
+  indexBets().catch((error) => console.error('[bets] index failed', error));
+}, BET_TICK_MS);
 
 // Background sync — decoupled from user traffic so credits are spent on our schedule.
 const SYNC_TICK_MS = 5 * 60 * 1000;
