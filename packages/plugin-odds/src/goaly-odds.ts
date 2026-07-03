@@ -154,16 +154,19 @@ export class GoalyOddsProvider implements SportsDataProvider {
     return board;
   }
 
-  /** Upcoming real matches with usable odds — a score means it already kicked off (not bettable).
+  /** Upcoming real matches with usable odds. Bettable = kickoff still in the future and no real
+   *  numeric score yet (the feed uses the string "LIVE" as a pre-match placeholder, not a score).
    *  Deduped by stable id so a fixture the feed lists twice never yields two markets. */
   private kept(board: GoalyBoard): GoalyMatch[] {
+    const nowS = Math.floor(this.now() / 1000);
     const seen = new Set<string>();
     const out: GoalyMatch[] = [];
     for (const m of board.matches) {
       const usable =
         m.home &&
         m.away &&
-        !m.score &&
+        parseKickoff(m.kickoff) > nowS &&
+        !parseScore(m.score) &&
         !SKIP_LEAGUE.test(m.league) &&
         (m.fulltime?.overunder?.line ?? 0) > 0;
       if (!usable) continue;
