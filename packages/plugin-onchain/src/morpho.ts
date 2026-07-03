@@ -7,12 +7,19 @@ const MORPHO_API = 'https://blue-api.morpho.org/graphql';
 interface MorphoVaultItem {
   address: string;
   name: string;
+  metadata?: { image?: string | null };
   chain?: { id?: number; network?: string };
-  asset?: { symbol?: string };
-  state?: { netApy?: number; totalAssetsUsd?: number };
+  asset?: { symbol?: string; decimals?: number };
+  state?: {
+    netApy?: number;
+    totalAssets?: string | number;
+    totalAssetsUsd?: number;
+    curators?: Array<{ name?: string; image?: string }>;
+  };
 }
 
-const VAULT_FIELDS = 'address name chain{id network} asset{symbol} state{netApy totalAssetsUsd}';
+const VAULT_FIELDS =
+  'address name metadata{image} chain{id network} asset{symbol decimals} state{netApy totalAssets totalAssetsUsd curators{name image}}';
 
 /** Chains the agent scans for yield (Morpho deployments). */
 const SCAN_CHAINS = [1, 8453, 42161, 10, 137, 130]; // Ethereum, Base, Arbitrum, Optimism, Polygon, Unichain
@@ -33,6 +40,9 @@ const STABLE_SYMBOLS = new Set([
 ]);
 
 function toSnapshot(v: MorphoVaultItem): VaultSnapshot {
+  const decimals = v.asset?.decimals ?? 6;
+  const assetAmount = v.state?.totalAssets ? Number(v.state.totalAssets) / 10 ** decimals : 0;
+  const curator = v.state?.curators?.[0];
   return {
     address: v.address,
     name: v.name,
@@ -41,6 +51,10 @@ function toSnapshot(v: MorphoVaultItem): VaultSnapshot {
     chainId: v.chain?.id ?? 0,
     chain: v.chain?.network ?? 'unknown',
     asset: v.asset?.symbol ?? '',
+    assetAmount,
+    curator: curator?.name ?? null,
+    curatorImage: curator?.image ?? null,
+    image: v.metadata?.image ?? null,
   };
 }
 
