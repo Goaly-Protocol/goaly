@@ -86,7 +86,8 @@ export class SyncService {
         })
         .run();
       // Market stays open through the live match, so close time = kickoff + the live window.
-      if (!known) await this.createMarketOnchainSafe(match.id, match.kickoff + LIVE_MATCH_WINDOW_S);
+      // Fire-and-forget so a big board inserts instantly; the KeyWallet serialises on-chain creates.
+      if (!known) void this.createMarketOnchainSafe(match.id, match.kickoff + LIVE_MATCH_WINDOW_S);
     }
     this.record('events', quota);
     return data.length;
