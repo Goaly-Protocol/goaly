@@ -4,7 +4,7 @@ import { LIVE_MATCH_WINDOW_S } from '@goaly/plugin-odds';
 import { resolveTeam } from '@goaly/plugin-teams';
 import { KeyWallet } from '@goaly/plugin-wdk';
 import { Scalar } from '@scalar/hono-api-reference';
-import { and, desc, eq, gt } from 'drizzle-orm';
+import { and, desc, eq, gt, sql } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { z } from 'zod';
@@ -280,7 +280,12 @@ export function createApp(deps: AppDeps): Hono {
   app.get('/predictions', (c) => {
     const userId = c.req.query('userId');
     if (!userId) throw new HttpError(400, 'userId query param required');
-    const rows = db.select().from(predictions).where(eq(predictions.userId, userId)).all();
+    // Case-insensitive: on-chain-indexed rows are checksummed, wallets may query any casing.
+    const rows = db
+      .select()
+      .from(predictions)
+      .where(sql`lower(${predictions.userId}) = ${userId.toLowerCase()}`)
+      .all();
     const enriched = rows.map((prediction) => {
       const match = db.select().from(matches).where(eq(matches.id, prediction.matchId)).get();
       return { ...prediction, match: match ? withTeamMeta(match, crests) : null };
