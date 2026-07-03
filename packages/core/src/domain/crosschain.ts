@@ -20,6 +20,16 @@ export const LZ_EID: Record<number, number> = {
   130: 30320, // Unichain
 };
 
+/** LayerZero Value Transfer API chain keys by EVM chain id. */
+export const LZ_CHAIN_KEY: Record<number, string> = {
+  1: 'ethereum',
+  42161: 'arbitrum',
+  8453: 'base',
+  10: 'optimism',
+  137: 'polygon',
+  130: 'unichain',
+};
+
 export interface RouteStep {
   action: 'Bridge' | 'Swap' | 'Deposit';
   detail: string;
@@ -30,7 +40,14 @@ export interface CrossChainRoute {
   toChain: string;
   /** Destination LayerZero endpoint id (for the OFT send). */
   dstEid: number;
+  /** LayerZero Value Transfer API identifiers, so the route can be quoted/executed live. */
+  srcChainKey: string;
+  dstChainKey: string;
+  srcToken: string; // USDT0 on the source chain
+  dstToken: string; // the vault's asset on the destination chain
   steps: RouteStep[];
+  /** Set once the agent has confirmed the path against LayerZero's live token graph. */
+  validated?: boolean;
   /** What still has to be in place for this route to fire live. */
   note: string;
 }
@@ -44,16 +61,19 @@ const pct = (apy: number) => `${(apy * 100).toFixed(2)}%`;
 export function crossChainRoute(from: VaultSnapshot, to: VaultSnapshot): CrossChainRoute | null {
   if (from.chainId === to.chainId) return null;
   const dstEid = LZ_EID[to.chainId];
-  if (!dstEid) return null;
+  const srcChainKey = LZ_CHAIN_KEY[from.chainId];
+  const dstChainKey = LZ_CHAIN_KEY[to.chainId];
+  if (!dstEid || !srcChainKey || !dstChainKey || !from.assetAddress || !to.assetAddress)
+    return null;
 
   const steps: RouteStep[] = [
     {
       action: 'Bridge',
-      detail: `USDT0 ${from.chain} → ${to.chain} via LayerZero OFT (eid ${dstEid})`,
+      detail: `${from.asset} ${from.chain} → ${to.chain} via LayerZero (eid ${dstEid})`,
     },
   ];
-  if (to.asset.toUpperCase() !== 'USDT0') {
-    steps.push({ action: 'Swap', detail: `USDT0 → ${to.asset} on ${to.chain}` });
+  if (from.asset.toUpperCase() !== to.asset.toUpperCase()) {
+    steps.push({ action: 'Swap', detail: `${from.asset} → ${to.asset} on ${to.chain}` });
   }
   steps.push({ action: 'Deposit', detail: `into ${to.name} (${pct(to.apy)})` });
 
@@ -61,9 +81,14 @@ export function crossChainRoute(from: VaultSnapshot, to: VaultSnapshot): CrossCh
     fromChain: from.chain,
     toChain: to.chain,
     dstEid,
+    srcChainKey,
+    dstChainKey,
+    srcToken: from.assetAddress,
+    dstToken: to.assetAddress,
     steps,
     note:
-      'Composed in one LayerZero message (OFT transfer + compose-deposit). Live firing needs the ' +
-      'destination receiver deployed + wired and the agent wallet funded on both chains.',
+      'Routed by the LayerZero Value Transfer API (OFT/Stargate/CCTP). Live firing needs a VT API ' +
+      'key + the agent wallet funded with USDT0 on the source chain (destination fees are handled ' +
+      'by LayerZero messaging).',
   };
 }

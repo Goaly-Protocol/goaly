@@ -10,6 +10,7 @@ const ARB_USDT0: VaultSnapshot = {
   chainId: 42161,
   chain: 'arbitrum',
   asset: 'USDT0',
+  assetAddress: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
 };
 const BASE_USDC: VaultSnapshot = {
   address: '0xbbb',
@@ -19,6 +20,7 @@ const BASE_USDC: VaultSnapshot = {
   chainId: 8453,
   chain: 'base',
   asset: 'USDC',
+  assetAddress: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
 };
 
 describe('crossChainRoute', () => {
