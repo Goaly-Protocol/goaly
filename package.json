@@ -27,6 +27,7 @@
     "contracts:test": "bun run --filter @goaly/contracts test"
   },
   "devDependencies": {
+    "@wormhole-foundation/wormhole-solidity-sdk": "^1.1.0",
     "prettier": "^3.9.4",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"

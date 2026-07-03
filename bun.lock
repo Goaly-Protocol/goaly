@@ -4,6 +4,7 @@
     "": {
       "name": "goalyield",
       "devDependencies": {
+        "@wormhole-foundation/wormhole-solidity-sdk": "^1.1.0",
         "prettier": "^3.9.4",
         "turbo": "^2.3.3",
         "typescript": "^5.7.2",
@@ -294,6 +295,8 @@
     "@types/qs": ["@types/qs@6.15.1", "", {}, "sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw=="],
 
     "@types/react": ["@types/react@19.2.17", "", { "dependencies": { "csstype": "^3.2.2" } }, "sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw=="],
+
+    "@wormhole-foundation/wormhole-solidity-sdk": ["@wormhole-foundation/wormhole-solidity-sdk@1.1.0", "", {}, "sha512-L5I+A7sX0iYBx5yju6v6duAUVI1Z4YwXCA7DBEmsv+eYUvmgMt9V3AcZwUBtpR8ibkuqSp16tSXcCK/+HqbyIQ=="],
 
     "abitype": ["abitype@1.2.3", "", { "peerDependencies": { "typescript": ">=5.0.4", "zod": "^3.22.0 || ^4.0.0" }, "optionalPeers": ["typescript", "zod"] }, "sha512-Ofer5QUnuUdTFsBRwARMoWKOH1ND5ehwYhJ3OJ/BQO+StkwQjHw0XyVh4vDttzHB7QOFhPHa/o413PJ82gU/Tg=="],
 
