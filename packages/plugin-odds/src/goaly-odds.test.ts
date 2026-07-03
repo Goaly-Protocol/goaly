@@ -121,7 +121,7 @@ const board = {
 
 describe('GoalyOddsProvider', () => {
   const fakeFetch = (async () => ({ json: async () => board })) as unknown as typeof fetch;
-  const provider = new GoalyOddsProvider('http://feed', fakeFetch, () => 0);
+  const provider = new GoalyOddsProvider('http://feed', undefined, fakeFetch, () => 0);
 
   test('listEvents skips e-football and maps real matches with a stable id', async () => {
     const { data } = await provider.listEvents();

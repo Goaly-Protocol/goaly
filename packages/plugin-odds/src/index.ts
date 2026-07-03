@@ -29,7 +29,11 @@ export function parseOddsApiKeys(keysCsv?: string, singleKey?: string): string[]
  * Pick the data provider: the Goaly Odds feed when a URL is set (free, no auth), else The Odds API
  * when keys are configured, else the mock.
  */
-export function createSportsProvider(keys: string[], goalyOddsUrl?: string): SportsDataProvider {
-  if (goalyOddsUrl) return new GoalyOddsProvider(goalyOddsUrl);
+export function createSportsProvider(
+  keys: string[],
+  goalyOddsUrl?: string,
+  goalyApiKey?: string,
+): SportsDataProvider {
+  if (goalyOddsUrl) return new GoalyOddsProvider(goalyOddsUrl, goalyApiKey);
   return keys.length > 0 ? new TheOddsApiProvider(keys) : new MockSportsProvider();
 }

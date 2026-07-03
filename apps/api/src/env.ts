@@ -22,6 +22,8 @@ const schema = z.object({
   /** Goaly Odds feed (https://odds.goaly.fun) — free, no auth. When set, it is the data source
    *  (preferred over The Odds API). Set empty to fall back to The Odds API / mock. */
   GOALY_ODDS_URL: z.string().default('https://odds.goaly.fun'),
+  /** API key for the Goaly Odds feed (sent as X-API-Key; required by the live API). */
+  ODDS_API_KEY: z.string().optional(),
   ODDS_SPORT_KEY: z.string().default('soccer_fifa_world_cup'),
   ODDS_REGION: z.string().default('eu'),
   ODDS_MARKETS: z.string().default('h2h'),

@@ -37,7 +37,7 @@ const SITE_TZ_OFFSET_S = 7 * 3600; // kickoff strings are the site's wall time (
  *  past it they're treated as finished. Also the on-chain market close window. */
 export const LIVE_MATCH_WINDOW_S = 150 * 60; // 2.5 h
 const SKIP_LEAGUE = /E-?FOOTBALL|ESPORT|FANTASY|VIRTUAL|SIMULAT|CYBER|SRL/i;
-const MAX_MATCHES = 60; // show the whole board; on-chain markets are created best-effort
+const MAX_MATCHES = 150; // show the whole board (API already filters finished); markets best-effort
 const CACHE_TTL_MS = 4000; // the feed moves every few seconds; one fetch serves a sync tick
 
 /** Malay odds → decimal. `+0.90`→1.90, `-0.90`→2.11, `0`→2.00. */
@@ -144,6 +144,7 @@ export class GoalyOddsProvider implements SportsDataProvider {
 
   constructor(
     private readonly url = 'https://odds.goaly.fun',
+    private readonly apiKey?: string,
     private readonly fetchFn: typeof fetch = fetch,
     private readonly now: () => number = Date.now,
   ) {}
@@ -151,7 +152,10 @@ export class GoalyOddsProvider implements SportsDataProvider {
   private async board(): Promise<GoalyBoard> {
     const now = this.now();
     if (this.cache && now - this.cache.at < CACHE_TTL_MS) return this.cache.board;
-    const res = await this.fetchFn(this.url, { headers: { Accept: 'application/json' } });
+    // Server-side: only matches with usable odds, sorted by kickoff (no pagination — show all).
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (this.apiKey) headers['X-API-Key'] = this.apiKey;
+    const res = await this.fetchFn(`${this.url}/?has_odds=1&sort=kickoff`, { headers });
     const board = (await res.json()) as GoalyBoard;
     this.cache = { at: now, board };
     return board;
