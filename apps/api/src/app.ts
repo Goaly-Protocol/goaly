@@ -9,7 +9,7 @@ import { LIVE_MATCH_WINDOW_S } from '@goaly/plugin-odds';
 import { resolveTeam } from '@goaly/plugin-teams';
 import { KeyWallet } from '@goaly/plugin-wdk';
 import { Scalar } from '@scalar/hono-api-reference';
-import { desc, eq, gt } from 'drizzle-orm';
+import { and, desc, eq, gt } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { z } from 'zod';
@@ -150,12 +150,12 @@ export function createApp(deps: AppDeps): Hono {
 
   // ── Matches (served from cache — never hits the odds API) ──
   app.get('/matches', (c) => {
-    // Hide finished matches: past the live window they've dropped from the feed and aren't bettable.
+    // Bettable only: still SCHEDULED and within the live window (finished/dropped ones are excluded).
     const cutoff = Math.floor(Date.now() / 1000) - LIVE_MATCH_WINDOW_S;
     const rows = db
       .select()
       .from(matches)
-      .where(gt(matches.kickoff, cutoff))
+      .where(and(eq(matches.status, 'SCHEDULED'), gt(matches.kickoff, cutoff)))
       .orderBy(matches.kickoff)
       .all();
     return c.json({ matches: rows.map((row) => withMatchDetail(db, row, crests)) });
