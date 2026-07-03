@@ -140,12 +140,16 @@ export class GoalyOddsProvider implements SportsDataProvider {
     return board;
   }
 
-  /** Real leagues with usable full-time odds, capped so we don't flood on-chain markets. */
+  /** Upcoming real matches with usable odds — a score means it already kicked off (not bettable). */
   private kept(board: GoalyBoard): GoalyMatch[] {
     return board.matches
       .filter(
         (m) =>
-          m.home && m.away && !SKIP_LEAGUE.test(m.league) && (m.fulltime?.overunder?.line ?? 0) > 0,
+          m.home &&
+          m.away &&
+          !m.score &&
+          !SKIP_LEAGUE.test(m.league) &&
+          (m.fulltime?.overunder?.line ?? 0) > 0,
       )
       .slice(0, MAX_MATCHES);
   }
