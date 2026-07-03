@@ -90,9 +90,8 @@ setInterval(() => {
   sync.tick().catch((error) => console.error('[sync] tick failed', error));
 }, SYNC_TICK_MS);
 
-// Realtime odds — the free feed moves every few seconds, so refresh far more often than the full
-// sync (one feed fetch updates every bettable match; the provider caches it for the burst).
-const ODDS_TICK_MS = 20 * 1000;
+// Realtime odds — poll the feed like a websocket (no cache), one fetch updates every bettable match.
+const ODDS_TICK_MS = 3 * 1000;
 setInterval(() => {
   sync
     .syncOdds()
