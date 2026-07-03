@@ -109,16 +109,6 @@ export const openApiDocument = {
         },
       },
     },
-    '/positions/{address}': {
-      get: {
-        summary: 'goUSDT balance for an address (redeemable USDT0 principal, 1:1)',
-        parameters: [{ name: 'address', in: 'path', required: true, schema: { type: 'string' } }],
-        responses: {
-          '200': { description: 'Position' },
-          '501': { description: 'GOALY_VAULT_ADDRESS not configured' },
-        },
-      },
-    },
     '/admin/sync': {
       post: {
         summary: 'Run one credit-aware sync tick',
