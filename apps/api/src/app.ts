@@ -44,6 +44,8 @@ export interface AppDeps {
   yieldAgent?: YieldAgentService;
   /** Optional — resolves club crests (national teams use flags directly). */
   crests?: CrestService;
+  /** Optional clock override (tests); defaults to the wall clock. */
+  now?: () => number;
 }
 
 const pickSchema = z.discriminatedUnion('market', [
@@ -117,6 +119,7 @@ export function createApp(deps: AppDeps): Hono {
   const standings = deps.standings ?? new StandingsService();
   const yieldAgent = deps.yieldAgent;
   const crests = deps.crests;
+  const now = deps.now ?? (() => Date.now());
   const app = new Hono();
 
   // CORS: allow the web app. Any localhost port in dev, plus configured production origins.
@@ -151,7 +154,7 @@ export function createApp(deps: AppDeps): Hono {
   // ── Matches (served from cache — never hits the odds API) ──
   app.get('/matches', (c) => {
     // Bettable only: still SCHEDULED and within the live window (finished/dropped ones are excluded).
-    const cutoff = Math.floor(Date.now() / 1000) - LIVE_MATCH_WINDOW_S;
+    const cutoff = Math.floor(now() / 1000) - LIVE_MATCH_WINDOW_S;
     const rows = db
       .select()
       .from(matches)
