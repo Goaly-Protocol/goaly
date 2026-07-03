@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { createDb } from '../src/db/client';
 import { apiUsage, matches, oddsCache } from '../src/db/schema';
 import { loadEnv } from '../src/env';
-import { MockSportsProvider } from '@goaly/plugin-odds';
+import { LIVE_MATCH_WINDOW_S, MockSportsProvider } from '@goaly/plugin-odds';
 import type { OddsEntry, ProviderResult } from '@goaly/plugin-odds';
 import { SyncService } from '../src/services/sync.service';
 
@@ -222,6 +222,7 @@ describe('SyncService credit strategy', () => {
 
     await sync.syncEvents();
     await sync.syncEvents(); // second pass: fixture already known
-    expect(created).toEqual([{ matchId: 'm1', closeTime: 4_200 }]);
+    // Market close time = kickoff + the live window, so live bets don't revert.
+    expect(created).toEqual([{ matchId: 'm1', closeTime: 4_200 + LIVE_MATCH_WINDOW_S }]);
   });
 });

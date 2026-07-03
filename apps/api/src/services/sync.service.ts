@@ -89,6 +89,27 @@ export class SyncService {
       // Fire-and-forget so a big board inserts instantly; the KeyWallet serialises on-chain creates.
       if (!known) void this.createMarketOnchainSafe(match.id, match.kickoff + LIVE_MATCH_WINDOW_S);
     }
+
+    // A started match that dropped out of the feed has finished — stop showing it as bettable.
+    // Guard on a non-empty feed so a transient empty response doesn't finish everything.
+    if (data.length > 0) {
+      const feedIds = new Set(data.map((m) => m.id));
+      const nowS = Math.floor(ts / 1000);
+      const started = db
+        .select({ id: matches.id })
+        .from(matches)
+        .where(and(eq(matches.status, 'SCHEDULED'), lt(matches.kickoff, nowS)))
+        .all();
+      for (const s of started) {
+        if (!feedIds.has(s.id)) {
+          db.update(matches)
+            .set({ status: 'FINISHED', updatedAt: ts })
+            .where(eq(matches.id, s.id))
+            .run();
+        }
+      }
+    }
+
     this.record('events', quota);
     return data.length;
   }
