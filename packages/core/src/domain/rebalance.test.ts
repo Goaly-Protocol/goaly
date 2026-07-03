@@ -16,6 +16,16 @@ const STEAK: VaultSnapshot = {
   tvlUsd: 18,
   ...ARB_USDT0,
 };
+/** A higher-APY vault on the SAME chain but a different token — reachable via an on-chain swap. */
+const ARB_USDC: VaultSnapshot = {
+  address: '0x7e97fa6893871A2751B5fE961978DCCb2c201E65',
+  name: 'Gauntlet USDC Core',
+  apy: 0.0341,
+  tvlUsd: 2_540_000,
+  chainId: 42161,
+  chain: 'arbitrum',
+  asset: 'USDC',
+};
 /** A higher-APY vault on another chain + token — the global best, but not directly migratable. */
 const BASE_USDC: VaultSnapshot = {
   address: '0xbA5eDb105B4d2D3E6A3d3C0C1eE9C6f0F2eE1234',
@@ -65,6 +75,13 @@ describe('decideRebalance', () => {
     expect(d.shouldRebalance).toBe(true);
     expect(d.from).toBeNull();
     expect(d.to?.name).toBe('Steakhouse Prime USDT0');
+  });
+
+  test('executes a cross-asset move on the same chain (higher-APY USDC vault, via swap)', () => {
+    const d = decideRebalance([GAUNTLET, STEAK, ARB_USDC], GAUNTLET.address, PARAMS);
+    expect(d.shouldRebalance).toBe(true);
+    expect(d.to?.name).toBe('Gauntlet USDC Core'); // different token, same chain → still executable
+    expect(d.crossVenue).toBe(false); // same chain, no bridge needed
   });
 
   test('executes same-venue but surfaces a cross-chain/token vault as the global best', () => {
