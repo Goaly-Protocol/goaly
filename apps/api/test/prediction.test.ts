@@ -29,7 +29,7 @@ function setup() {
   const provider = new MockSportsProvider(fixtures);
   const sync = new SyncService({ db, provider, env, now });
   const predictions = new PredictionService(db, BigInt(env.PROTOCOL_FEE_BPS), now);
-  const app = createApp({ db, env, sync, predictions });
+  const app = createApp({ db, env, sync, predictions, now });
   return { app, sync };
 }
 
