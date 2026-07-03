@@ -55,9 +55,10 @@ function pct(apy: number): string {
 }
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
-/** Same migration venue = same chain and same underlying asset (a direct migrate, no bridge/swap). */
-const sameVenue = (a: VaultSnapshot, b: VaultSnapshot) =>
-  a.chainId === b.chainId && a.asset.toUpperCase() === b.asset.toUpperCase();
+/** Executable in one on-chain migrate = same chain. The vault swaps the asset on-chain if it
+ *  differs (USDT0 ↔ USDC), so a different token on the same chain is still directly reachable.
+ *  Only a different *chain* needs a bridge, so that is what counts as cross-venue. */
+const sameVenue = (a: VaultSnapshot, b: VaultSnapshot) => a.chainId === b.chainId;
 
 const maxByApy = (vaults: VaultSnapshot[]): VaultSnapshot | null =>
   vaults.reduce<VaultSnapshot | null>((best, v) => (!best || v.apy > best.apy ? v : best), null);
@@ -121,7 +122,7 @@ export function decideRebalance(
     };
   }
   const lead = same(bestExec.address, current.address)
-    ? `already the best on ${current.chain}/${current.asset}`
+    ? `already the best vault on ${current.chain}`
     : `${bestExec.name} leads by ${gainBps}bps (below ${params.minApyGainBps}bps)`;
   return {
     shouldRebalance: false,
