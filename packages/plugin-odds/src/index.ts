@@ -8,6 +8,7 @@ export { MockSportsProvider } from './mock';
 export { TheOddsApiProvider, KeyRing } from './the-odds-api';
 export {
   GoalyOddsProvider,
+  LIVE_MATCH_WINDOW_S,
   deriveH2h,
   malayToDecimal,
   parseKickoff,

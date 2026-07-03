@@ -89,6 +89,16 @@ setInterval(() => {
   sync.tick().catch((error) => console.error('[sync] tick failed', error));
 }, SYNC_TICK_MS);
 
+// Realtime odds — the free feed moves every few seconds, so refresh far more often than the full
+// sync (one feed fetch updates every bettable match; the provider caches it for the burst).
+const ODDS_TICK_MS = 20 * 1000;
+setInterval(() => {
+  sync
+    .syncOdds()
+    .then(() => sync.freezeClosingOdds())
+    .catch((error) => console.error('[odds] tick failed', error));
+}, ODDS_TICK_MS);
+
 // The yield agent re-evaluates on its own cadence (advisory unless AGENT_AUTO_REBALANCE=true).
 const AGENT_TICK_MS = 15 * 60 * 1000;
 yieldAgent.run().catch((error) => console.error('[agent] initial run failed', error));
