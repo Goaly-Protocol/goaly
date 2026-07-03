@@ -123,15 +123,16 @@ describe('GoalyOddsProvider', () => {
   const fakeFetch = (async () => ({ json: async () => board })) as unknown as typeof fetch;
   const provider = new GoalyOddsProvider('http://feed', fakeFetch, () => 0);
 
-  test('listEvents skips e-football and maps real matches', async () => {
+  test('listEvents skips e-football and maps real matches with a stable id', async () => {
     const { data } = await provider.listEvents();
-    expect(data.map((m) => m.id)).toEqual(['g-111']);
+    expect(data).toHaveLength(1);
+    expect(data[0]?.id).toMatch(/^g-alpha-beta-/); // teams + kickoff, not oddsid
     expect(data[0]?.homeTeam).toBe('Alpha');
   });
 
   test('listOdds derives h2h in the bookmakers shape', async () => {
     const { data } = await provider.listOdds();
-    expect(data[0]?.matchId).toBe('g-111');
+    expect(data[0]?.matchId).toMatch(/^g-alpha-beta-/);
     const json = JSON.stringify(data[0]?.data);
     expect(json).toContain('"key":"h2h"');
     expect(json).toContain('"name":"Draw"');
@@ -140,7 +141,7 @@ describe('GoalyOddsProvider', () => {
 
   test('listScores parses scores + live/finished across all matches', async () => {
     const { data } = await provider.listScores();
-    const live = data.find((s) => s.matchId === 'g-222');
+    const live = data.find((s) => s.matchId.startsWith('g-x-y-'));
     expect(live?.result).toEqual({ homeScore: 1, awayScore: 0 });
     expect(live?.completed).toBe(false); // HT = still live
   });

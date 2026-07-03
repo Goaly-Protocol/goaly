@@ -121,6 +121,20 @@ function titleCase(value: string): string {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+const slug = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .slice(0, 14);
+
+/**
+ * Stable match id from teams + kickoff — NOT `oddsid`, which the feed regenerates over time and
+ * would otherwise create duplicate matches/markets for the same fixture on re-sync.
+ */
+function matchId(m: GoalyMatch): string {
+  return `g-${slug(m.home)}-${slug(m.away)}-${parseKickoff(m.kickoff)}`;
+}
+
 export class GoalyOddsProvider implements SportsDataProvider {
   readonly name = 'goaly-odds';
   private cache: { at: number; board: GoalyBoard } | null = null;
@@ -140,24 +154,32 @@ export class GoalyOddsProvider implements SportsDataProvider {
     return board;
   }
 
-  /** Upcoming real matches with usable odds — a score means it already kicked off (not bettable). */
+  /** Upcoming real matches with usable odds — a score means it already kicked off (not bettable).
+   *  Deduped by stable id so a fixture the feed lists twice never yields two markets. */
   private kept(board: GoalyBoard): GoalyMatch[] {
-    return board.matches
-      .filter(
-        (m) =>
-          m.home &&
-          m.away &&
-          !m.score &&
-          !SKIP_LEAGUE.test(m.league) &&
-          (m.fulltime?.overunder?.line ?? 0) > 0,
-      )
-      .slice(0, MAX_MATCHES);
+    const seen = new Set<string>();
+    const out: GoalyMatch[] = [];
+    for (const m of board.matches) {
+      const usable =
+        m.home &&
+        m.away &&
+        !m.score &&
+        !SKIP_LEAGUE.test(m.league) &&
+        (m.fulltime?.overunder?.line ?? 0) > 0;
+      if (!usable) continue;
+      const id = matchId(m);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      out.push(m);
+      if (out.length >= MAX_MATCHES) break;
+    }
+    return out;
   }
 
   async listEvents(): Promise<ProviderResult<Match[]>> {
     const board = await this.board();
     const data: Match[] = this.kept(board).map((m) => ({
-      id: `g-${m.oddsid}`,
+      id: matchId(m),
       homeTeam: m.home,
       awayTeam: m.away,
       kickoff: parseKickoff(m.kickoff),
@@ -173,7 +195,7 @@ export class GoalyOddsProvider implements SportsDataProvider {
     for (const m of board.matches) {
       const result = parseScore(m.score);
       if (!result) continue;
-      data.push({ matchId: `g-${m.oddsid}`, result, completed: !isLive(m.time) });
+      data.push({ matchId: matchId(m), result, completed: !isLive(m.time) });
     }
     return { data };
   }
@@ -185,7 +207,7 @@ export class GoalyOddsProvider implements SportsDataProvider {
       const h2h = deriveH2h(m.fulltime, m.isgive);
       if (!h2h) continue;
       data.push({
-        matchId: `g-${m.oddsid}`,
+        matchId: matchId(m),
         market: 'h2h',
         data: [
           {
