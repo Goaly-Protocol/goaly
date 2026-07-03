@@ -11,10 +11,11 @@ export const ARBITRUM = {
   chainId: ARBITRUM_ONE.id,
   /** Canonical USDT0 token on Arbitrum One. */
   usdt0: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9',
-  /** Morpho MetaMorpho (ERC-4626) USDT0 yield vaults. */
+  /** Morpho MetaMorpho (ERC-4626) USDT0 yield vaults the agent can migrate between (same asset). */
   morphoVaults: {
     gauntletUsdt0Core: '0x139250CdB310D657eAC506c7C7FC6AcDE34Af1ec',
     steakhousePrimeUsdt0: '0x2281961480216653529A03D6CE03Ee6B8cdF564E',
+    steakhouseHighYieldUsdt0: '0x4739E2c293bDCD835829aA7c5d7fBdee93565D1a',
   },
   /** LayerZero V2 EndpointV2. */
   lzEndpoint: '0x1a44076050125825900e736c501f859c50fE728c',

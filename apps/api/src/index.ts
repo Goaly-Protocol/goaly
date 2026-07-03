@@ -73,6 +73,7 @@ const yieldAgent = new YieldAgentService({
   candidateVaults: [
     ARBITRUM.morphoVaults.gauntletUsdt0Core,
     ARBITRUM.morphoVaults.steakhousePrimeUsdt0,
+    ARBITRUM.morphoVaults.steakhouseHighYieldUsdt0,
   ],
   params: { minApyGainBps: env.AGENT_MIN_APY_GAIN_BPS, minTvlUsd: env.AGENT_MIN_TVL_USD },
   ...(oracleWallet ? { wallet: oracleWallet } : {}),
