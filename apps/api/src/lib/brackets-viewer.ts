@@ -51,12 +51,65 @@ const STATUS_WAITING = 1;
 const STATUS_READY = 2;
 const STATUS_COMPLETED = 4;
 
+type KoMatch = BracketRound['matches'][number];
+
+/** The team that advances from a tie (goals, then penalties). Null if not played. */
+function advancer(m: KoMatch): string | null {
+  const hs = m.homeScore;
+  const as = m.awayScore;
+  if (hs === null || as === null || !m.home || !m.away) return null;
+  if (hs !== as) return hs > as ? m.home : m.away;
+  return (m.homePens ?? 0) >= (m.awayPens ?? 0) ? m.home : m.away;
+}
+
+/**
+ * Reorder each round so consecutive pairs feed the next round's matches — the binary-tree shape
+ * brackets-viewer draws its connectors from. The feed lists ties in date order, not bracket order,
+ * so without this the connectors point at the wrong teams. Matches winner→next-round-team; where the
+ * next round is still TBD, the original order is kept.
+ */
+function alignRounds(rounds: BracketRound[]): BracketRound[] {
+  const out = rounds.map((r) => ({ ...r, matches: [...r.matches] }));
+  for (let r = 0; r < out.length - 1; r += 1) {
+    const cur = out[r];
+    const next = out[r + 1];
+    if (!cur || !next || cur.matches.length !== next.matches.length * 2) continue;
+
+    const byWinner = new Map<string, KoMatch>();
+    for (const m of cur.matches) {
+      const w = advancer(m);
+      if (w) byWinner.set(w, m);
+    }
+
+    const used = new Set<KoMatch>();
+    const ordered: (KoMatch | null)[] = [];
+    for (const nm of next.matches) {
+      for (const team of [nm.home, nm.away]) {
+        const feeder = team ? byWinner.get(team) : undefined;
+        if (feeder && !used.has(feeder)) {
+          ordered.push(feeder);
+          used.add(feeder);
+        } else {
+          ordered.push(null);
+        }
+      }
+    }
+    const leftovers = cur.matches.filter((m) => !used.has(m));
+    let li = 0;
+    const filled = ordered
+      .map((slot) => slot ?? leftovers[li++])
+      .filter((m): m is KoMatch => Boolean(m));
+    if (filled.length === cur.matches.length) cur.matches = filled;
+  }
+  return out;
+}
+
 export function toBracketsViewer(
   rounds: BracketRound[],
   resolve: (team: string) => TeamDisplay,
 ): BracketsViewerData {
-  // The third-place play-off is not part of the elimination tree — drop it from the bracket.
-  const koRounds = rounds.filter((r) => !/third/i.test(r.name));
+  // Third-place play-off isn't part of the tree; align the rest so connectors match the teams.
+  const koRounds = alignRounds(rounds.filter((r) => !/third/i.test(r.name)));
 
   const nameToId = new Map<string, number>();
   const participants: BracketsViewerData['participants'] = [];

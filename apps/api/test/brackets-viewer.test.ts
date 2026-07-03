@@ -65,6 +65,51 @@ describe('toBracketsViewer', () => {
     expect(final?.opponent1).toEqual({ id: null });
   });
 
+  test('reorders a round so its pairs feed the next round (connector alignment)', () => {
+    const ko: BracketRound[] = [
+      {
+        id: 'r16',
+        name: 'Round of 16',
+        matches: [
+          { home: 'A', away: 'B', homeScore: 2, awayScore: 0, homePens: null, awayPens: null }, // A
+          { home: 'C', away: 'D', homeScore: 0, awayScore: 1, homePens: null, awayPens: null }, // D
+          { home: 'E', away: 'F', homeScore: 3, awayScore: 1, homePens: null, awayPens: null }, // E
+          { home: 'G', away: 'H', homeScore: 1, awayScore: 2, homePens: null, awayPens: null }, // H
+        ],
+      },
+      {
+        id: 'qf',
+        name: 'Quarter-finals',
+        matches: [
+          {
+            home: 'A',
+            away: 'E',
+            homeScore: null,
+            awayScore: null,
+            homePens: null,
+            awayPens: null,
+          },
+          {
+            home: 'D',
+            away: 'H',
+            homeScore: null,
+            awayScore: null,
+            homePens: null,
+            awayPens: null,
+          },
+        ],
+      },
+    ];
+    const out = toBracketsViewer(ko, (t) => ({ name: t, imageUrl: null }));
+    const name = Object.fromEntries(out.participants.map((x) => [x.id, x.name]));
+    const first = out.matches
+      .filter((m) => m.round_id === 0)
+      .sort((a, b) => a.number - b.number)
+      .map((m) => name[(m.opponent1 as { id: number }).id]);
+    // Pairs must be (A,E) then (D,H) to feed QF — so the home sides are A, E, C, G.
+    expect(first).toEqual(['A', 'E', 'C', 'G']);
+  });
+
   test('single-elimination stage sized from the first round', () => {
     expect(data.stages[0]?.type).toBe('single_elimination');
     expect(data.stages[0]?.settings.size).toBe(4); // 2 R32 matches × 2
