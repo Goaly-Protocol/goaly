@@ -44,9 +44,10 @@ export const openApiDocument = {
   openapi: '3.1.0',
   info: {
     title: 'Goaly API',
-    version: '0.1.0',
+    version: '0.2.0',
     description:
-      'No-loss football prediction API. All stake/payout amounts are USDT0 base units (6 decimals) as decimal strings. Match data is served from a local cache filled by a credit-aware sync against The Odds API.',
+      'No-loss football predictions on Arbitrum. Players stake stablecoins directly (USDT0 / USDC) and never lose principal; winners split a yield-funded, odds-boosted prize. Amounts are USDT0 base units (6 decimals) as decimal strings. Odds + fixtures come from the Goaly odds feed; an autonomous WDK agent rebalances the pool’s Morpho yield across chains and tokens.',
+    'x-logo': { url: '/favicon.svg', altText: 'Goaly' },
   },
   servers: [{ url: '/' }],
   paths: {

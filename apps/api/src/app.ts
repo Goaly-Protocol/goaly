@@ -138,9 +138,45 @@ export function createApp(deps: AppDeps): Hono {
     return c.json({ error: 'internal error' }, 500);
   });
 
+  // ⚽ favicon (SVG) so the browser tab + link unfurls show an icon.
+  const FAVICON =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚽</text></svg>';
+  app.get('/favicon.ico', (c) =>
+    c.body(FAVICON, 200, {
+      'Content-Type': 'image/svg+xml',
+      'Cache-Control': 'public, max-age=86400',
+    }),
+  );
+  app.get('/favicon.svg', (c) =>
+    c.body(FAVICON, 200, {
+      'Content-Type': 'image/svg+xml',
+      'Cache-Control': 'public, max-age=86400',
+    }),
+  );
+
+  // Root: a small JSON status so hitting the domain shows something useful.
+  app.get('/', (c) =>
+    c.json({
+      name: 'Goaly API',
+      status: 'ok',
+      description:
+        'No-loss football predictions on Arbitrum — matches, live odds, standings, and an autonomous WDK yield agent.',
+      docs: '/docs',
+      endpoints: ['/matches', '/standings', '/bracket', '/agent', '/predictions', '/health'],
+    }),
+  );
+
   // ── API docs (Scalar) ──
   app.get('/openapi.json', (c) => c.json(openApiDocument));
-  app.get('/docs', Scalar({ url: '/openapi.json', pageTitle: 'Goaly API', theme: 'purple' }));
+  app.get(
+    '/docs',
+    Scalar({
+      url: '/openapi.json',
+      pageTitle: 'Goaly API',
+      theme: 'purple',
+      favicon: '/favicon.svg',
+    }),
+  );
 
   app.get('/health', (c) => c.json({ ok: true, provider: sync ? 'ready' : 'none' }));
 
