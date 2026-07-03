@@ -5,6 +5,7 @@ export * from './domain/prediction';
 export * from './domain/pot';
 export * from './domain/odds';
 export * from './domain/rebalance';
+export * from './domain/crosschain';
 
 // Constants
 export * from './constants/chains';

@@ -1,4 +1,6 @@
 import {
+  type CrossChainRoute,
+  crossChainRoute,
   decideRebalance,
   type RebalanceDecision,
   type RebalanceParams,
@@ -19,6 +21,8 @@ export interface YieldAgentStatus {
   current: VaultSnapshot | null;
   candidates: VaultSnapshot[];
   decision: RebalanceDecision | null;
+  /** Concrete LayerZero route to the best global vault when it lives on another chain. */
+  route: CrossChainRoute | null;
   lastRunAt: number | null;
   lastTxHash: string | null;
   autoExecute: boolean;
@@ -51,6 +55,7 @@ export class YieldAgentService {
       current: null,
       candidates: [],
       decision: null,
+      route: null,
       lastRunAt: null,
       lastTxHash: null,
       autoExecute: Boolean(deps.autoExecute),
@@ -79,6 +84,11 @@ export class YieldAgentService {
     const decision = decideRebalance(candidates, currentAddress, this.deps.params);
     const current =
       candidates.find((v) => v.address.toLowerCase() === currentAddress.toLowerCase()) ?? null;
+    // When the best vault anywhere is on another chain, spell out the LayerZero route to reach it.
+    const route =
+      decision.crossVenue && current && decision.globalBest
+        ? crossChainRoute(current, decision.globalBest)
+        : null;
 
     let lastTxHash = this.status.lastTxHash;
     if (execute && decision.shouldRebalance && decision.to && this.deps.wallet) {
@@ -94,6 +104,7 @@ export class YieldAgentService {
       current,
       candidates,
       decision,
+      route,
       lastRunAt: now,
       lastTxHash,
       autoExecute: Boolean(this.deps.autoExecute),
