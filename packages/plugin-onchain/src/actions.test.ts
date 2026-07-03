@@ -1,10 +1,10 @@
 import { MockWallet } from '@goaly/plugin-wdk';
 import { describe, expect, test } from 'bun:test';
 import { type Hex, decodeFunctionData } from 'viem';
-import { claimPayout, placePrediction, predictionPoolAbi, withdrawFromVault } from './actions';
+import { claimPayout, goalyPoolAbi, placePrediction } from './actions';
 
 const POOL = '0x227596cee251C775b6E532CD226b45f0AB36DAa4';
-const VAULT = '0x811830E04753D6Ee1f4b78647a56cd005F7686dE'; // goUSDT
+const USDC = '0xaf88d065e77c8cC2239327C5EDb3A432268e5831';
 const MARKET = `0x${'ab'.repeat(32)}` as Hex;
 
 async function wallet() {
@@ -13,40 +13,37 @@ async function wallet() {
   return w;
 }
 
-describe('vault + pool actions', () => {
-  test('withdrawFromVault encodes withdraw(amount, receiver)', async () => {
-    const w = await wallet();
-    await withdrawFromVault(w, { vault: VAULT, amount: 50_000_000n });
-    expect(w.sentTxs[0]?.to).toBe(VAULT);
-    expect(w.sentTxs[0]?.data).toMatch(/^0x[0-9a-f]{136}$/); // selector + amount + receiver
-  });
-
-  test('placePrediction approves goUSDT then stakes on an outcome', async () => {
+describe('GoalyPool actions', () => {
+  test('placePrediction approves the stake token then predicts with it', async () => {
     const w = await wallet();
     await placePrediction(w, {
       pool: POOL,
-      goUsdt: VAULT,
+      token: USDC,
       marketId: MARKET,
       outcome: 'AWAY',
       amount: 10_000_000n,
+      minStake: 9_900_000n,
     });
     expect(w.sentTxs).toHaveLength(2);
-    expect(w.sentTxs[0]?.to).toBe(VAULT); // approve goUSDT
+    expect(w.sentTxs[0]?.to).toBe(USDC); // approve the stake token
     expect(w.sentTxs[0]?.data?.startsWith('0x095ea7b3')).toBe(true);
     expect(w.sentTxs[1]?.to).toBe(POOL); // placePrediction
-    const decoded = decodeFunctionData({ abi: predictionPoolAbi, data: w.sentTxs[1]?.data as Hex });
+    const decoded = decodeFunctionData({ abi: goalyPoolAbi, data: w.sentTxs[1]?.data as Hex });
     expect(decoded.functionName).toBe('placePrediction');
     expect(decoded.args?.[0]).toBe(MARKET);
     expect(Number(decoded.args?.[1])).toBe(2); // AWAY
-    expect(decoded.args?.[2]).toBe(10_000_000n);
+    expect(decoded.args?.[2]).toBe(USDC);
+    expect(decoded.args?.[3]).toBe(10_000_000n);
+    expect(decoded.args?.[4]).toBe(9_900_000n);
   });
 
-  test('claimPayout encodes claim(marketId)', async () => {
+  test('claimPayout encodes claim(marketId, outToken, minOut)', async () => {
     const w = await wallet();
-    await claimPayout(w, { pool: POOL, marketId: MARKET });
+    await claimPayout(w, { pool: POOL, marketId: MARKET, outToken: USDC, minOut: 9_900_000n });
     expect(w.sentTxs[0]?.to).toBe(POOL);
-    const decoded = decodeFunctionData({ abi: predictionPoolAbi, data: w.sentTxs[0]?.data as Hex });
+    const decoded = decodeFunctionData({ abi: goalyPoolAbi, data: w.sentTxs[0]?.data as Hex });
     expect(decoded.functionName).toBe('claim');
     expect(decoded.args?.[0]).toBe(MARKET);
+    expect(decoded.args?.[1]).toBe(USDC);
   });
 });

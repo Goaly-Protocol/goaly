@@ -38,7 +38,7 @@ const settleOnchain = oracleWallet
       const oddsBps =
         (row ? closingWinningOddsBps(row, result) : null) ?? winningOddsBps(liveOdds, result);
       await settleMarket(oracleWallet, {
-        pool: ARBITRUM.goaly.predictionPool as `0x${string}`,
+        pool: ARBITRUM.goaly.pool as `0x${string}`,
         marketId: marketIdFor(matchId),
         result,
         winningOddsBps: oddsBps,
@@ -49,7 +49,7 @@ const settleOnchain = oracleWallet
 const createMarketOnchain = oracleWallet
   ? async (matchId: string, closeTime: number) => {
       await createMarket(oracleWallet, {
-        pool: ARBITRUM.goaly.predictionPool as `0x${string}`,
+        pool: ARBITRUM.goaly.pool as `0x${string}`,
         marketId: marketIdFor(matchId),
         closeTime: BigInt(closeTime),
       });
@@ -69,7 +69,7 @@ const predictions = new PredictionService(db, BigInt(env.PROTOCOL_FEE_BPS));
 // Autonomous yield agent — watches Morpho USDT0 vaults + rebalances goUSDT's backing (WDK wallet).
 const yieldAgent = new YieldAgentService({
   client: createArbitrumClient(env.ARBITRUM_RPC_URL),
-  vault: ARBITRUM.goaly.vault as `0x${string}`,
+  vault: ARBITRUM.goaly.pool as `0x${string}`,
   candidateVaults: [
     ARBITRUM.morphoVaults.gauntletUsdt0Core,
     ARBITRUM.morphoVaults.steakhousePrimeUsdt0,
