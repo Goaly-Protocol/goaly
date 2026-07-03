@@ -11,7 +11,6 @@ import {
   fetchVaultSnapshots,
   migrateYieldVault,
   readYieldVault,
-  validateBridgeRoute,
 } from '@goaly/plugin-onchain';
 import type { WalletProvider } from '@goaly/plugin-wdk';
 import type { Address, PublicClient } from 'viem';
@@ -85,23 +84,11 @@ export class YieldAgentService {
     const decision = decideRebalance(candidates, currentAddress, this.deps.params);
     const current =
       candidates.find((v) => v.address.toLowerCase() === currentAddress.toLowerCase()) ?? null;
-    // When the best vault anywhere is on another chain, spell out the LayerZero route to reach it
-    // and confirm the path is live against LayerZero's Value Transfer API (public token graph).
+    // When the best vault anywhere is on another chain, spell out the Wormhole route to reach it.
     const route =
       decision.crossVenue && current && decision.globalBest
         ? crossChainRoute(current, decision.globalBest)
         : null;
-    if (route) {
-      route.validated = await validateBridgeRoute(
-        {
-          srcChainKey: route.srcChainKey,
-          srcToken: route.srcToken,
-          dstChainKey: route.dstChainKey,
-          dstToken: route.dstToken,
-        },
-        this.deps.fetchFn ? { fetchFn: this.deps.fetchFn } : {},
-      );
-    }
 
     let lastTxHash = this.status.lastTxHash;
     if (execute && decision.shouldRebalance && decision.to && this.deps.wallet) {
