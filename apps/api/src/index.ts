@@ -66,7 +66,7 @@ const sync = new SyncService({
 });
 const predictions = new PredictionService(db, BigInt(env.PROTOCOL_FEE_BPS));
 
-// Autonomous yield agent — watches Morpho USDT0 vaults + rebalances goUSDT's backing (WDK wallet).
+// Autonomous yield agent — watches Morpho USDT0 vaults + rebalances GoalyPool's backing (WDK wallet).
 const yieldAgent = new YieldAgentService({
   client: createArbitrumClient(env.ARBITRUM_RPC_URL),
   vault: ARBITRUM.goaly.pool as `0x${string}`,

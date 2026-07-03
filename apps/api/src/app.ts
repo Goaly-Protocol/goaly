@@ -1,10 +1,5 @@
 import { ARBITRUM, resolveOutcome } from '@goaly/core';
-import {
-  createArbitrumClient,
-  marketIdFor,
-  readGoUsdtBalance,
-  settleMarket,
-} from '@goaly/plugin-onchain';
+import { marketIdFor, settleMarket } from '@goaly/plugin-onchain';
 import { LIVE_MATCH_WINDOW_S } from '@goaly/plugin-odds';
 import { resolveTeam } from '@goaly/plugin-teams';
 import { KeyWallet } from '@goaly/plugin-wdk';
@@ -29,7 +24,6 @@ import type { CrestService } from './services/crest.service';
 import { StandingsService } from './services/standings.service';
 import type { YieldAgentService } from './services/yield-agent.service';
 import { openApiDocument } from './openapi';
-import { createIndexerClient } from './services/indexer';
 import type { PredictionService } from './services/prediction.service';
 import type { SyncService } from './services/sync.service';
 
@@ -115,7 +109,6 @@ function withMatchDetail<
 
 export function createApp(deps: AppDeps): Hono {
   const { db, sync, predictions: predictionService } = deps;
-  const indexer = deps.env.INDEXER_URL ? createIndexerClient(deps.env.INDEXER_URL) : null;
   const standings = deps.standings ?? new StandingsService();
   const yieldAgent = deps.yieldAgent;
   const crests = deps.crests;
@@ -254,34 +247,6 @@ export function createApp(deps: AppDeps): Hono {
       return { ...prediction, match: match ? withTeamMeta(match, crests) : null };
     });
     return c.json({ predictions: enriched });
-  });
-
-  // ── On-chain position (reads GoalyVault via viem / @goaly/plugin-onchain) ──
-  app.get('/positions/:address', async (c) => {
-    const vaultAddress = deps.env.GOALY_VAULT_ADDRESS;
-    if (!vaultAddress) throw new HttpError(501, 'GOALY_VAULT_ADDRESS not configured');
-    const address = c.req.param('address');
-    if (!/^0x[0-9a-fA-F]{40}$/.test(address))
-      throw new HttpError(400, 'address must be a 20-byte hex');
-
-    // Prefer the Ponder indexer (served from its DB, no RPC); fall back to a direct vault read.
-    if (indexer) {
-      try {
-        const balance = await indexer.goUsdtBalance(address);
-        return c.json({ address, goUsdt: (balance ?? 0n).toString(), source: 'indexer' });
-      } catch (error) {
-        console.warn('[positions] indexer unavailable, falling back to RPC', error);
-      }
-    }
-
-    const client = createArbitrumClient(deps.env.ARBITRUM_RPC_URL);
-    // goUSDT balance = redeemable USDT0 principal (1:1).
-    const goUsdt = await readGoUsdtBalance(
-      client,
-      vaultAddress as `0x${string}`,
-      address as `0x${string}`,
-    );
-    return c.json({ address, goUsdt: goUsdt.toString(), source: 'rpc' });
   });
 
   // ── Admin: sync, oracle result, settlement, credit usage ──
