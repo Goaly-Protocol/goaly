@@ -1,9 +1,12 @@
 /**
  * Autonomous yield-rebalancing policy for the Goaly Yield Agent.
  *
- * The agent holds MANAGER_ROLE on GoalyVault and can migrate the protocol's backing between Morpho
- * USDT0 vaults. This module is the pure decision core: given live vault economics it decides whether
- * a migration is worth it — never touching the network, so it is fully deterministic + testable.
+ * The agent holds MANAGER_ROLE on GoalyVault and can migrate the protocol's backing between yield
+ * vaults. It scans the whole Morpho landscape — every supported chain and every stablecoin — and
+ * ranks it. A migration into a vault on the SAME chain + asset as the current backing is a direct
+ * on-chain move it can execute now; a higher-APY vault on another chain or in another token is the
+ * global target it surfaces (reachable via a WDK bridge + swap). This module is the pure decision
+ * core: given live vault economics it decides, never touching the network, so it stays testable.
  */
 
 /** A yield vault's live economics. `apy` is a fraction (0.0172 = 1.72%). */
@@ -12,6 +15,11 @@ export interface VaultSnapshot {
   name: string;
   apy: number;
   tvlUsd: number;
+  /** Chain the vault lives on (numeric id + display name). */
+  chainId: number;
+  chain: string;
+  /** Underlying asset symbol, e.g. "USDT0", "USDC". */
+  asset: string;
 }
 
 export interface RebalanceParams {
@@ -24,7 +32,12 @@ export interface RebalanceParams {
 export interface RebalanceDecision {
   shouldRebalance: boolean;
   from: VaultSnapshot | null;
+  /** Best vault we can migrate into right now (same chain + asset as the current backing). */
   to: VaultSnapshot | null;
+  /** Highest-APY vault anywhere — may be on another chain or in another token. */
+  globalBest: VaultSnapshot | null;
+  /** True when `globalBest` is on a different chain/asset than the current backing. */
+  crossVenue: boolean;
   gainBps: number;
   reason: string;
 }
@@ -36,11 +49,17 @@ function pct(apy: number): string {
 }
 
 const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase();
+/** Same migration venue = same chain and same underlying asset (a direct migrate, no bridge/swap). */
+const sameVenue = (a: VaultSnapshot, b: VaultSnapshot) =>
+  a.chainId === b.chainId && a.asset.toUpperCase() === b.asset.toUpperCase();
+
+const maxByApy = (vaults: VaultSnapshot[]): VaultSnapshot | null =>
+  vaults.reduce<VaultSnapshot | null>((best, v) => (!best || v.apy > best.apy ? v : best), null);
 
 /**
- * Decide whether to migrate the vault's backing. A candidate must clear the TVL risk floor to be a
- * migration target, and must beat the current vault by at least `minApyGainBps`. The current vault
- * is always allowed to stay (even if it dips below the floor) — we only gate moving *into* thin ones.
+ * Decide whether to migrate the vault's backing. Candidates must clear the TVL risk floor. The agent
+ * only *executes* migrations on the same chain + asset as the current backing; the highest-APY vault
+ * anywhere is reported as `globalBest` (advisory when it's cross-venue — a WDK bridge/swap target).
  */
 export function decideRebalance(
   vaults: VaultSnapshot[],
@@ -49,19 +68,19 @@ export function decideRebalance(
 ): RebalanceDecision {
   const current = vaults.find((v) => same(v.address, currentAddress)) ?? null;
 
-  const candidates = vaults.filter(
+  // Everything that clears the risk floor (the current vault is always allowed to stay).
+  const eligible = vaults.filter(
     (v) => v.tvlUsd >= params.minTvlUsd || same(v.address, currentAddress),
   );
-  const best = candidates.reduce<VaultSnapshot | null>(
-    (b, v) => (!b || v.apy > b.apy ? v : b),
-    null,
-  );
+  const globalBest = maxByApy(eligible);
 
-  if (!best) {
+  if (!globalBest) {
     return {
       shouldRebalance: false,
       from: current,
       to: null,
+      globalBest: null,
+      crossVenue: false,
       gainBps: 0,
       reason: 'no eligible vault',
     };
@@ -70,36 +89,45 @@ export function decideRebalance(
     return {
       shouldRebalance: true,
       from: null,
-      to: best,
+      to: globalBest,
+      globalBest,
+      crossVenue: false,
       gainBps: 0,
-      reason: `deploy into ${best.name} (${pct(best.apy)})`,
-    };
-  }
-  if (same(best.address, current.address)) {
-    return {
-      shouldRebalance: false,
-      from: current,
-      to: current,
-      gainBps: 0,
-      reason: `holding ${current.name} — already the best risk-adjusted APY (${pct(current.apy)})`,
+      reason: `deploy into ${globalBest.name} (${pct(globalBest.apy)}) on ${globalBest.chain}`,
     };
   }
 
-  const gainBps = Math.round((best.apy - current.apy) * BPS);
-  if (gainBps < params.minApyGainBps) {
+  // Directly executable = same chain + asset as the current backing.
+  const executable = eligible.filter((v) => sameVenue(v, current));
+  const bestExec = maxByApy(executable) ?? current;
+  const crossVenue = !sameVenue(globalBest, current);
+  const crossNote =
+    crossVenue && globalBest.apy > current.apy
+      ? ` · best anywhere: ${globalBest.name} ${pct(globalBest.apy)} on ${globalBest.chain}/${globalBest.asset} — reachable via WDK bridge+swap`
+      : '';
+
+  const gainBps = Math.round((bestExec.apy - current.apy) * BPS);
+  if (!same(bestExec.address, current.address) && gainBps >= params.minApyGainBps) {
     return {
-      shouldRebalance: false,
+      shouldRebalance: true,
       from: current,
-      to: best,
+      to: bestExec,
+      globalBest,
+      crossVenue,
       gainBps,
-      reason: `${best.name} leads by ${gainBps}bps — below the ${params.minApyGainBps}bps threshold, staying put`,
+      reason: `${current.name} ${pct(current.apy)} → ${bestExec.name} ${pct(bestExec.apy)} (+${gainBps}bps)${crossNote}`,
     };
   }
+  const lead = same(bestExec.address, current.address)
+    ? `already the best on ${current.chain}/${current.asset}`
+    : `${bestExec.name} leads by ${gainBps}bps (below ${params.minApyGainBps}bps)`;
   return {
-    shouldRebalance: true,
+    shouldRebalance: false,
     from: current,
-    to: best,
+    to: bestExec,
+    globalBest,
+    crossVenue,
     gainBps,
-    reason: `${current.name} ${pct(current.apy)} → ${best.name} ${pct(best.apy)} (+${gainBps}bps)`,
+    reason: `holding ${current.name} (${pct(current.apy)}) — ${lead}${crossNote}`,
   };
 }
