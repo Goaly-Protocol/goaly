@@ -13,6 +13,7 @@ import { apiUsage, matches, oddsCache, predictions } from './db/schema';
 import type { Env } from './env';
 import { toBracketsViewer } from './lib/brackets-viewer';
 import { HttpError } from './lib/errors';
+import { isRealMatch } from './lib/match-filter';
 import {
   closingWinningOddsBps,
   frozenOdds,
@@ -189,7 +190,9 @@ export function createApp(deps: AppDeps): Hono {
       .from(matches)
       .where(and(eq(matches.status, 'SCHEDULED'), gt(matches.kickoff, cutoff)))
       .orderBy(matches.kickoff)
-      .all();
+      .all()
+      // Hide aggregate/placeholder feed rows ("Home Team - Friday - 3 Matches") — not real fixtures.
+      .filter((row) => isRealMatch(row.homeTeam, row.awayTeam));
     return c.json({ matches: rows.map((row) => withMatchDetail(db, row, crests)) });
   });
 
