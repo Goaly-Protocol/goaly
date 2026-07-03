@@ -20,6 +20,11 @@ export interface VaultSnapshot {
   chain: string;
   /** Underlying asset symbol, e.g. "USDT0", "USDC". */
   asset: string;
+  /** Display extras from Morpho (ignored by the decision core). */
+  assetAmount?: number;
+  curator?: string | null;
+  curatorImage?: string | null;
+  image?: string | null;
 }
 
 export interface RebalanceParams {
