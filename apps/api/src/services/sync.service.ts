@@ -3,6 +3,7 @@ import { and, desc, eq, gt, isNull, lt } from 'drizzle-orm';
 import type { Env } from '../env';
 import type { DB } from '../db/client';
 import { apiUsage, matches, oddsCache, syncState } from '../db/schema';
+import { isRealMatch } from '../lib/match-filter';
 import { parseH2hOdds } from '../lib/odds';
 import { LIVE_MATCH_WINDOW_S, type QuotaInfo, type SportsDataProvider } from '@goaly/plugin-odds';
 
@@ -59,6 +60,8 @@ export class SyncService {
     const { data, quota } = await provider.listEvents(env.ODDS_SPORT_KEY);
     const ts = this.now();
     for (const match of data) {
+      // Drop aggregate/placeholder feed rows ("Home Team - Friday - 3 Matches") — not real fixtures.
+      if (!isRealMatch(match.homeTeam, match.awayTeam)) continue;
       const known = db
         .select({ id: matches.id })
         .from(matches)
