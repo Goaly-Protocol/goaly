@@ -57,6 +57,12 @@ export function migrate(raw: Database): void {
       key TEXT PRIMARY KEY,
       last_run_at INTEGER NOT NULL DEFAULT 0
     );
+
+    CREATE TABLE IF NOT EXISTS team_crests (
+      name TEXT PRIMARY KEY,
+      crest TEXT NOT NULL DEFAULT '',
+      fetched_at INTEGER NOT NULL
+    );
   `);
 
   // Backfill closing-odds columns on pre-existing DBs (ignored when already present).

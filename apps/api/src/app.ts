@@ -24,6 +24,7 @@ import {
   parseH2hOdds,
   winningOddsBps,
 } from './lib/odds';
+import type { CrestService } from './services/crest.service';
 import { StandingsService } from './services/standings.service';
 import type { YieldAgentService } from './services/yield-agent.service';
 import { openApiDocument } from './openapi';
@@ -40,6 +41,8 @@ export interface AppDeps {
   standings?: StandingsService;
   /** Optional — the autonomous yield-rebalancing agent (present when ORACLE_PK is set). */
   yieldAgent?: YieldAgentService;
+  /** Optional — resolves club crests (national teams use flags directly). */
+  crests?: CrestService;
 }
 
 const pickSchema = z.discriminatedUnion('market', [
@@ -63,12 +66,24 @@ const resultBody = z.object({
   awayScore: z.number().int().min(0),
 });
 
-/** Enrich a match row with resolved team metadata (name, FIFA code, flag). */
-function withTeamMeta<T extends { homeTeam: string; awayTeam: string }>(row: T) {
+/** National-team meta (name, FIFA code, flag), else a club crest from the cache, else null. */
+function teamMetaFor(name: string, crests?: CrestService) {
+  const national = resolveTeam(name);
+  if (national) return national;
+  const crest = crests?.get(name);
+  if (!crest) return null;
+  return { name, code: name.slice(0, 3).toUpperCase(), iso: '', logo: crest };
+}
+
+/** Enrich a match row with resolved team metadata (national flag or club crest). */
+function withTeamMeta<T extends { homeTeam: string; awayTeam: string }>(
+  row: T,
+  crests?: CrestService,
+) {
   return {
     ...row,
-    homeTeamMeta: resolveTeam(row.homeTeam),
-    awayTeamMeta: resolveTeam(row.awayTeam),
+    homeTeamMeta: teamMetaFor(row.homeTeam, crests),
+    awayTeamMeta: teamMetaFor(row.awayTeam, crests),
   };
 }
 
@@ -87,10 +102,10 @@ function withMatchDetail<
     closingDrawBps: number | null;
     closingAwayBps: number | null;
   },
->(db: DB, row: T) {
+>(db: DB, row: T, crests?: CrestService) {
   // Frozen closing odds once kicked off; live cache before that.
   return {
-    ...withTeamMeta(row),
+    ...withTeamMeta(row, crests),
     odds: frozenOdds(row) ?? matchOdds(db, row.id, row.homeTeam, row.awayTeam),
   };
 }
@@ -100,6 +115,7 @@ export function createApp(deps: AppDeps): Hono {
   const indexer = deps.env.INDEXER_URL ? createIndexerClient(deps.env.INDEXER_URL) : null;
   const standings = deps.standings ?? new StandingsService();
   const yieldAgent = deps.yieldAgent;
+  const crests = deps.crests;
   const app = new Hono();
 
   // CORS: allow the web app. Any localhost port in dev, plus configured production origins.
@@ -134,7 +150,7 @@ export function createApp(deps: AppDeps): Hono {
   // ── Matches (served from cache — never hits the odds API) ──
   app.get('/matches', (c) => {
     const rows = db.select().from(matches).orderBy(matches.kickoff).all();
-    return c.json({ matches: rows.map((row) => withMatchDetail(db, row)) });
+    return c.json({ matches: rows.map((row) => withMatchDetail(db, row, crests)) });
   });
 
   app.get('/matches/:id', (c) => {
@@ -144,7 +160,7 @@ export function createApp(deps: AppDeps): Hono {
       .where(eq(matches.id, c.req.param('id')))
       .get();
     if (!row) throw new HttpError(404, 'match not found');
-    return c.json(withMatchDetail(db, row));
+    return c.json(withMatchDetail(db, row, crests));
   });
 
   // ── Standings + bracket (FIFA data API — free, cached) ──
@@ -224,7 +240,7 @@ export function createApp(deps: AppDeps): Hono {
     const rows = db.select().from(predictions).where(eq(predictions.userId, userId)).all();
     const enriched = rows.map((prediction) => {
       const match = db.select().from(matches).where(eq(matches.id, prediction.matchId)).get();
-      return { ...prediction, match: match ? withTeamMeta(match) : null };
+      return { ...prediction, match: match ? withTeamMeta(match, crests) : null };
     });
     return c.json({ predictions: enriched });
   });

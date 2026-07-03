@@ -12,6 +12,7 @@ import { createApp } from './app';
 import { createDb } from './db/client';
 import { matches, oddsCache } from './db/schema';
 import { loadEnv } from './env';
+import { CrestService } from './services/crest.service';
 import { closingWinningOddsBps, parseH2hOdds, winningOddsBps } from './lib/odds';
 import { PredictionService } from './services/prediction.service';
 import { SyncService } from './services/sync.service';
@@ -78,7 +79,9 @@ const yieldAgent = new YieldAgentService({
   autoExecute: env.AGENT_AUTO_REBALANCE,
 });
 
-const app = createApp({ db, env, sync, predictions, yieldAgent });
+// Club crests (national teams use flags directly); resolved in the background + cached.
+const crests = new CrestService(db);
+const app = createApp({ db, env, sync, predictions, yieldAgent, crests });
 
 // Background sync — decoupled from user traffic so credits are spent on our schedule.
 const SYNC_TICK_MS = 5 * 60 * 1000;
@@ -92,6 +95,14 @@ yieldAgent.run().catch((error) => console.error('[agent] initial run failed', er
 setInterval(() => {
   yieldAgent.run().catch((error) => console.error('[agent] run failed', error));
 }, AGENT_TICK_MS);
+
+// Resolve club crests in the background (bounded batches; national teams use flags).
+const CREST_TICK_MS = 20 * 1000;
+setInterval(() => {
+  const teams = db.select({ home: matches.homeTeam, away: matches.awayTeam }).from(matches).all();
+  const names = teams.flatMap((m) => [m.home, m.away]);
+  crests.resolve(names).catch((error) => console.error('[crest] resolve failed', error));
+}, CREST_TICK_MS);
 
 console.log(
   `Goaly API listening on :${env.API_PORT} (provider: ${provider.name}, keys: ${keyCount})`,

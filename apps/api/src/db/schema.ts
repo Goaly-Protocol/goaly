@@ -54,3 +54,10 @@ export const syncState = sqliteTable('sync_state', {
   key: text('key').primaryKey(),
   lastRunAt: integer('last_run_at').notNull().default(0),
 });
+
+/** Resolved club crest URLs, keyed by team name. `crest = ''` = looked up, none found. */
+export const teamCrests = sqliteTable('team_crests', {
+  name: text('name').primaryKey(),
+  crest: text('crest').notNull().default(''),
+  fetchedAt: integer('fetched_at').notNull(),
+});
