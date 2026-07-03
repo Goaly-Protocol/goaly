@@ -13,6 +13,7 @@ import {
   readYieldVault,
 } from '@goaly/plugin-onchain';
 import type { WalletProvider } from '@goaly/plugin-wdk';
+import { aiRebalanceRationale } from './ai-agent';
 import type { Address, PublicClient } from 'viem';
 
 export interface YieldAgentStatus {
@@ -21,8 +22,10 @@ export interface YieldAgentStatus {
   current: VaultSnapshot | null;
   candidates: VaultSnapshot[];
   decision: RebalanceDecision | null;
-  /** Concrete LayerZero route to the best global vault when it lives on another chain. */
+  /** Concrete Wormhole route to the best global vault when it lives on another chain. */
   route: CrossChainRoute | null;
+  /** LLM (OpenAI) rationale + confidence for the current decision, when configured. */
+  ai: { reason: string; confidence: number } | null;
   lastRunAt: number | null;
   lastTxHash: string | null;
   autoExecute: boolean;
@@ -36,6 +39,8 @@ export interface YieldAgentDeps {
   params: RebalanceParams;
   wallet?: WalletProvider;
   autoExecute?: boolean;
+  /** OpenAI key — enables the LLM reasoning layer over the rule-based decision (advisory). */
+  openaiKey?: string;
   fetchFn?: typeof fetch;
   now?: () => number;
 }
@@ -56,6 +61,7 @@ export class YieldAgentService {
       candidates: [],
       decision: null,
       route: null,
+      ai: null,
       lastRunAt: null,
       lastTxHash: null,
       autoExecute: Boolean(deps.autoExecute),
@@ -90,6 +96,29 @@ export class YieldAgentService {
         ? crossChainRoute(current, decision.globalBest)
         : null;
 
+    // LLM reasoning layer (advisory) — narrates + scores the rule-based decision.
+    let ai = this.status.ai;
+    if (this.deps.openaiKey) {
+      const toVault = (v: VaultSnapshot | null) =>
+        v ? { name: v.name, apy: v.apy, tvlUsd: v.tvlUsd, chain: v.chain, asset: v.asset } : null;
+      ai =
+        (await aiRebalanceRationale(this.deps.openaiKey, {
+          current: toVault(current),
+          best: toVault(decision.globalBest),
+          shouldRebalance: decision.shouldRebalance,
+          gainBps: decision.gainBps,
+          crossChain: decision.crossVenue,
+          candidates: candidates.map((v) => ({
+            name: v.name,
+            apy: v.apy,
+            tvlUsd: v.tvlUsd,
+            chain: v.chain,
+            asset: v.asset,
+          })),
+          ...(this.deps.fetchFn ? { fetchFn: this.deps.fetchFn } : {}),
+        })) ?? ai;
+    }
+
     let lastTxHash = this.status.lastTxHash;
     if (execute && decision.shouldRebalance && decision.to && this.deps.wallet) {
       lastTxHash = await migrateYieldVault(this.deps.wallet, {
@@ -105,6 +134,7 @@ export class YieldAgentService {
       candidates,
       decision,
       route,
+      ai,
       lastRunAt: now,
       lastTxHash,
       autoExecute: Boolean(this.deps.autoExecute),
