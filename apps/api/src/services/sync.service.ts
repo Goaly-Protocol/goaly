@@ -231,7 +231,9 @@ export class SyncService {
     try {
       await this.deps.createMarketOnchain(matchId, closeTime);
     } catch (error) {
-      console.error(`[sync] on-chain createMarket failed for ${matchId}`, error);
+      // Usually a benign "already exists" revert (stable market id from a prior run) — keep it terse.
+      const msg = error instanceof Error ? error.message.split('\n')[0] : String(error);
+      console.warn(`[sync] createMarket skipped for ${matchId}: ${msg}`);
     }
   }
 
