@@ -25,9 +25,9 @@ export const ARBITRUM = {
   /** Goaly contracts deployed + verified on Arbitrum One. Vault is goUSDT (ERC-20, migratable);
    *  pool supports odds-boosted parimutuel prizes. */
   goaly: {
-    vault: '0x74D0A5B7B6D64826E6A6490a25c60ceEE9BdAdb4', // goUSDT
-    predictionPool: '0xD0fCf7f41cbbe4fB7AF31B5193eaDEB52f07D191',
-    composer: '0x005002E26e909d3265ebBd502F12f311F0137864',
+    vault: '0x2Be9565CfaFDaE2c06cF3980c872d7D49E745Ba8', // goUSDT
+    predictionPool: '0x4d18DcE850C665c739b48EC372A8AfB872e5d6C8',
+    wormholeReceiver: '0xF5C6d07442D8992901cf263501EFA11d69743d5c',
     deployBlock: 479692780,
   },
 } as const;
