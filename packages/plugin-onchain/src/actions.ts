@@ -2,22 +2,8 @@ import type { Outcome } from '@goaly/core';
 import type { WalletProvider } from '@goaly/plugin-wdk';
 import { type Address, type Hex, encodeFunctionData, erc20Abi } from 'viem';
 
-/** Write ABI fragment for GoalyVault.withdraw. */
-export const goalyVaultWithdrawAbi = [
-  {
-    type: 'function',
-    name: 'withdraw',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'assets', type: 'uint256' },
-      { name: 'receiver', type: 'address' },
-    ],
-    outputs: [{ type: 'uint256' }],
-  },
-] as const;
-
-/** Write ABI fragments for PredictionPool player actions. */
-export const predictionPoolAbi = [
+/** Write ABI fragments for GoalyPool player actions. */
+export const goalyPoolAbi = [
   {
     type: 'function',
     name: 'placePrediction',
@@ -25,15 +11,21 @@ export const predictionPoolAbi = [
     inputs: [
       { name: 'marketId', type: 'bytes32' },
       { name: 'outcome', type: 'uint8' },
+      { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint256' },
+      { name: 'minStake', type: 'uint256' },
     ],
-    outputs: [],
+    outputs: [{ type: 'uint256' }],
   },
   {
     type: 'function',
     name: 'claim',
     stateMutability: 'nonpayable',
-    inputs: [{ name: 'marketId', type: 'bytes32' }],
+    inputs: [
+      { name: 'marketId', type: 'bytes32' },
+      { name: 'outToken', type: 'address' },
+      { name: 'minOut', type: 'uint256' },
+    ],
     outputs: [{ type: 'uint256' }, { type: 'uint256' }],
   },
 ] as const;
@@ -41,32 +33,18 @@ export const predictionPoolAbi = [
 /** Solidity `enum Outcome { HOME, DRAW, AWAY }` ordering. */
 const OUTCOME_INDEX: Record<Outcome, number> = { HOME: 0, DRAW: 1, AWAY: 2 };
 
-/** Redeem `amount` goUSDT for USDT0 (1:1) to the wallet. */
-export async function withdrawFromVault(
-  wallet: WalletProvider,
-  params: { vault: Address; amount: bigint },
-): Promise<string> {
-  const account = wallet.getAccount();
-  if (!account)
-    throw new Error('withdrawFromVault: wallet has no account (call createWallet first)');
-  const data = encodeFunctionData({
-    abi: goalyVaultWithdrawAbi,
-    functionName: 'withdraw',
-    args: [params.amount, account.address as Address],
-  });
-  return wallet.sendTransaction({ to: params.vault, data });
-}
-
 export interface PlacePredictionParams {
   pool: Address;
-  /** goUSDT token address (the GoalyVault). */
-  goUsdt: Address;
+  /** Stake token the player pays with (USDT0 / USDC / USDT). */
+  token: Address;
   marketId: Hex;
   outcome: Outcome;
   amount: bigint;
+  /** Minimum USDT0 stake after the token→USDT0 swap (slippage guard). */
+  minStake?: bigint;
 }
 
-/** Approve goUSDT to the pool, then stake it on an outcome (no-loss). */
+/** Approve the stake token to the pool, then predict — the pool normalises it to USDT0 + earns yield. */
 export async function placePrediction(
   wallet: WalletProvider,
   params: PlacePredictionParams,
@@ -76,26 +54,37 @@ export async function placePrediction(
     functionName: 'approve',
     args: [params.pool, params.amount],
   });
-  const approveHash = await wallet.sendTransaction({ to: params.goUsdt, data: approveData });
+  const approveHash = await wallet.sendTransaction({ to: params.token, data: approveData });
 
   const placeData = encodeFunctionData({
-    abi: predictionPoolAbi,
+    abi: goalyPoolAbi,
     functionName: 'placePrediction',
-    args: [params.marketId, OUTCOME_INDEX[params.outcome], params.amount],
+    args: [
+      params.marketId,
+      OUTCOME_INDEX[params.outcome],
+      params.token,
+      params.amount,
+      params.minStake ?? 0n,
+    ],
   });
   const placeHash = await wallet.sendTransaction({ to: params.pool, data: placeData });
   return { approveHash, placeHash };
 }
 
-/** Claim a settled market: reclaim staked goUSDT + any USDT0 prize. */
-export async function claimPayout(
-  wallet: WalletProvider,
-  params: { pool: Address; marketId: Hex },
-): Promise<string> {
+export interface ClaimParams {
+  pool: Address;
+  marketId: Hex;
+  /** Token to receive the stake (+ prize) in — USDT0 / USDC / USDT. */
+  outToken: Address;
+  minOut?: bigint;
+}
+
+/** Claim a settled market: reclaim your stake (+ any prize), paid out in `outToken`. */
+export async function claimPayout(wallet: WalletProvider, params: ClaimParams): Promise<string> {
   const data = encodeFunctionData({
-    abi: predictionPoolAbi,
+    abi: goalyPoolAbi,
     functionName: 'claim',
-    args: [params.marketId],
+    args: [params.marketId, params.outToken, params.minOut ?? 0n],
   });
   return wallet.sendTransaction({ to: params.pool, data });
 }

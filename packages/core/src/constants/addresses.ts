@@ -20,15 +20,11 @@ export const ARBITRUM = {
     gauntletUsdcCore: '0x7e97fa6893871A2751B5fE961978DCCb2c201E65',
     steakhouseHighYieldUsdc: '0x5c0C306Aaa9F877de636f4d5822cA9F2E81563BA',
   },
-  /** LayerZero V2 EndpointV2. */
-  lzEndpoint: '0x1a44076050125825900e736c501f859c50fE728c',
-  /** Goaly contracts deployed + verified on Arbitrum One. Vault is goUSDT (ERC-20, migratable);
-   *  pool supports odds-boosted parimutuel prizes. */
+  /** Goaly on Arbitrum One. GoalyPool = no-loss prediction markets with a built-in Morpho yield
+   *  engine — players stake stablecoins directly (no receipt token), claim back in any stablecoin. */
   goaly: {
-    vault: '0x2Be9565CfaFDaE2c06cF3980c872d7D49E745Ba8', // goUSDT
-    predictionPool: '0x4d18DcE850C665c739b48EC372A8AfB872e5d6C8',
-    wormholeReceiver: '0xF5C6d07442D8992901cf263501EFA11d69743d5c',
-    deployBlock: 479692780,
+    pool: '0x009b57aefAC6b10dF71a49982Eb3f678D2b4966C',
+    deployBlock: 480000000,
   },
 } as const;
 
