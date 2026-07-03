@@ -86,7 +86,7 @@ export const openApiDocument = {
         responses: { '200': { description: 'Predictions' } },
       },
       post: {
-        summary: 'Place a prediction (stakes borrowed credit, not principal)',
+        summary: 'Record a prediction (off-chain mirror of the on-chain stake)',
         requestBody: {
           required: true,
           content: {
@@ -112,7 +112,7 @@ export const openApiDocument = {
     },
     '/admin/sync': {
       post: {
-        summary: 'Run one credit-aware sync tick',
+        summary: 'Run one sync tick (fixtures + odds + on-chain markets)',
         responses: { '200': { description: 'Sync counts' } },
       },
     },
@@ -150,7 +150,7 @@ export const openApiDocument = {
     },
     '/admin/matches/{id}/settle-onchain': {
       post: {
-        summary: 'Settle the on-chain PredictionPool market from the finished match result',
+        summary: 'Settle the on-chain GoalyPool market from the finished match result',
         parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }],
         responses: {
           '200': { description: 'On-chain settlement tx (matchId, marketId, result, txHash)' },
