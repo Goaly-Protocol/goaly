@@ -7,7 +7,41 @@ const MORPHO_API = 'https://blue-api.morpho.org/graphql';
 interface MorphoVaultItem {
   address: string;
   name: string;
+  chain?: { id?: number; network?: string };
+  asset?: { symbol?: string };
   state?: { netApy?: number; totalAssetsUsd?: number };
+}
+
+const VAULT_FIELDS = 'address name chain{id network} asset{symbol} state{netApy totalAssetsUsd}';
+
+/** Chains the agent scans for yield (Morpho deployments). */
+const SCAN_CHAINS = [1, 8453, 42161, 10, 137, 130]; // Ethereum, Base, Arbitrum, Optimism, Polygon, Unichain
+/** Stablecoins the agent treats as eligible backing (any of these on any chain). */
+const STABLE_SYMBOLS = new Set([
+  'USDC',
+  'USDT',
+  'USDT0',
+  'USD₮0',
+  'USDC.E',
+  'DAI',
+  'USDS',
+  'USDE',
+  'GHO',
+  'FRAX',
+  'PYUSD',
+  'RLUSD',
+]);
+
+function toSnapshot(v: MorphoVaultItem): VaultSnapshot {
+  return {
+    address: v.address,
+    name: v.name,
+    apy: v.state?.netApy ?? 0,
+    tvlUsd: v.state?.totalAssetsUsd ?? 0,
+    chainId: v.chain?.id ?? 0,
+    chain: v.chain?.network ?? 'unknown',
+    asset: v.asset?.symbol ?? '',
+  };
 }
 
 /** Live APY + TVL for the given Morpho vault addresses (Arbitrum by default). Empty on any failure. */
@@ -23,8 +57,7 @@ export async function fetchVaultSnapshots(
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        query:
-          'query($chainId:Int!){vaults(first:1000 where:{chainId_in:[$chainId]}){items{address name state{netApy totalAssetsUsd}}}}',
+        query: `query($chainId:Int!){vaults(first:1000 where:{chainId_in:[$chainId]}){items{${VAULT_FIELDS}}}}`,
         variables: { chainId },
       }),
     });
@@ -32,12 +65,40 @@ export async function fetchVaultSnapshots(
     const json = (await res.json()) as { data?: { vaults?: { items?: MorphoVaultItem[] } } };
     return (json.data?.vaults?.items ?? [])
       .filter((v) => wanted.has(v.address.toLowerCase()))
-      .map((v) => ({
-        address: v.address,
-        name: v.name,
-        apy: v.state?.netApy ?? 0,
-        tvlUsd: v.state?.totalAssetsUsd ?? 0,
-      }));
+      .map(toSnapshot);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Scan the whole Morpho stablecoin landscape across chains, ranked by APY. This is what makes the
+ * agent cross-chain + cross-token aware: it sees the best yield anywhere, not just its own vault's
+ * chain/asset. Filters to sane stablecoin vaults above a TVL floor; empty on any failure.
+ */
+export async function fetchStablecoinVaults(
+  opts: { fetchFn?: typeof fetch; chains?: number[]; minTvlUsd?: number; limit?: number } = {},
+): Promise<VaultSnapshot[]> {
+  const fetchFn = opts.fetchFn ?? fetch;
+  const chains = opts.chains ?? SCAN_CHAINS;
+  const minTvlUsd = opts.minTvlUsd ?? 2_000_000;
+  const limit = opts.limit ?? 12;
+  try {
+    const res = await fetchFn(MORPHO_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `query($chains:[Int!]!,$minTvl:Float!){vaults(first:1000 where:{chainId_in:$chains totalAssetsUsd_gte:$minTvl}){items{${VAULT_FIELDS}}}}`,
+        variables: { chains, minTvl: minTvlUsd },
+      }),
+    });
+    if (!res.ok) return [];
+    const json = (await res.json()) as { data?: { vaults?: { items?: MorphoVaultItem[] } } };
+    return (json.data?.vaults?.items ?? [])
+      .map(toSnapshot)
+      .filter((v) => STABLE_SYMBOLS.has(v.asset.toUpperCase()) && v.apy > 0 && v.apy < 0.25)
+      .sort((a, b) => b.apy - a.apy)
+      .slice(0, limit);
   } catch {
     return [];
   }

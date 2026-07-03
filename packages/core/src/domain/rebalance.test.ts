@@ -1,17 +1,30 @@
 import { describe, expect, test } from 'bun:test';
 import { decideRebalance, type VaultSnapshot } from './rebalance';
 
+const ARB_USDT0 = { chainId: 42161, chain: 'arbitrum', asset: 'USDT0' };
 const GAUNTLET: VaultSnapshot = {
   address: '0x139250CdB310D657eAC506c7C7FC6AcDE34Af1ec',
   name: 'Gauntlet USDT0 Core',
   apy: 0.0172,
   tvlUsd: 121,
+  ...ARB_USDT0,
 };
 const STEAK: VaultSnapshot = {
   address: '0x2281961480216653529A03D6CE03Ee6B8cdF564E',
   name: 'Steakhouse Prime USDT0',
   apy: 0.0211,
   tvlUsd: 18,
+  ...ARB_USDT0,
+};
+/** A higher-APY vault on another chain + token — the global best, but not directly migratable. */
+const BASE_USDC: VaultSnapshot = {
+  address: '0xbA5eDb105B4d2D3E6A3d3C0C1eE9C6f0F2eE1234',
+  name: 'Steakhouse High Yield USDC',
+  apy: 0.0867,
+  tvlUsd: 4_900_000,
+  chainId: 8453,
+  chain: 'base',
+  asset: 'USDC',
 };
 
 const PARAMS = { minApyGainBps: 30, minTvlUsd: 10 };
@@ -52,5 +65,16 @@ describe('decideRebalance', () => {
     expect(d.shouldRebalance).toBe(true);
     expect(d.from).toBeNull();
     expect(d.to?.name).toBe('Steakhouse Prime USDT0');
+  });
+
+  test('executes same-venue but surfaces a cross-chain/token vault as the global best', () => {
+    const d = decideRebalance([GAUNTLET, STEAK, BASE_USDC], GAUNTLET.address, PARAMS);
+    // Executes only within its own chain + asset (Arbitrum USDT0).
+    expect(d.shouldRebalance).toBe(true);
+    expect(d.to?.name).toBe('Steakhouse Prime USDT0');
+    // But the true best anywhere is the Base USDC vault — flagged cross-venue, not auto-executed.
+    expect(d.globalBest?.name).toBe('Steakhouse High Yield USDC');
+    expect(d.crossVenue).toBe(true);
+    expect(d.reason).toContain('best anywhere');
   });
 });
