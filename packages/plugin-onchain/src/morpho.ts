@@ -9,7 +9,7 @@ interface MorphoVaultItem {
   name: string;
   metadata?: { image?: string | null };
   chain?: { id?: number; network?: string };
-  asset?: { symbol?: string; decimals?: number };
+  asset?: { symbol?: string; decimals?: number; address?: string };
   state?: {
     netApy?: number;
     totalAssets?: string | number;
@@ -19,7 +19,7 @@ interface MorphoVaultItem {
 }
 
 const VAULT_FIELDS =
-  'address name metadata{image} chain{id network} asset{symbol decimals} state{netApy totalAssets totalAssetsUsd curators{name image}}';
+  'address name metadata{image} chain{id network} asset{symbol decimals address} state{netApy totalAssets totalAssetsUsd curators{name image}}';
 
 /** Chains the agent scans for yield (Morpho deployments). */
 const SCAN_CHAINS = [1, 8453, 42161, 10, 137, 130]; // Ethereum, Base, Arbitrum, Optimism, Polygon, Unichain
@@ -51,6 +51,7 @@ function toSnapshot(v: MorphoVaultItem): VaultSnapshot {
     chainId: v.chain?.id ?? 0,
     chain: v.chain?.network ?? 'unknown',
     asset: v.asset?.symbol ?? '',
+    assetAddress: v.asset?.address ?? null,
     assetAmount,
     curator: curator?.name ?? null,
     curatorImage: curator?.image ?? null,

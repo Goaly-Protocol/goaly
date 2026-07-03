@@ -21,6 +21,7 @@ export interface VaultSnapshot {
   /** Underlying asset symbol, e.g. "USDT0", "USDC". */
   asset: string;
   /** Display extras from Morpho (ignored by the decision core). */
+  assetAddress?: string | null;
   assetAmount?: number;
   curator?: string | null;
   curatorImage?: string | null;
@@ -106,10 +107,6 @@ export function decideRebalance(
   const executable = eligible.filter((v) => sameVenue(v, current));
   const bestExec = maxByApy(executable) ?? current;
   const crossVenue = !sameVenue(globalBest, current);
-  const crossNote =
-    crossVenue && globalBest.apy > current.apy
-      ? ` · best anywhere: ${globalBest.name} ${pct(globalBest.apy)} on ${globalBest.chain}/${globalBest.asset} — reachable via WDK bridge+swap`
-      : '';
 
   const gainBps = Math.round((bestExec.apy - current.apy) * BPS);
   if (!same(bestExec.address, current.address) && gainBps >= params.minApyGainBps) {
@@ -120,7 +117,7 @@ export function decideRebalance(
       globalBest,
       crossVenue,
       gainBps,
-      reason: `${current.name} ${pct(current.apy)} → ${bestExec.name} ${pct(bestExec.apy)} (+${gainBps}bps)${crossNote}`,
+      reason: `${current.name} ${pct(current.apy)} → ${bestExec.name} ${pct(bestExec.apy)} (+${gainBps}bps)`,
     };
   }
   const lead = same(bestExec.address, current.address)
@@ -133,6 +130,6 @@ export function decideRebalance(
     globalBest,
     crossVenue,
     gainBps,
-    reason: `holding ${current.name} (${pct(current.apy)}) — ${lead}${crossNote}`,
+    reason: `holding ${current.name} (${pct(current.apy)}) — ${lead}`,
   };
 }

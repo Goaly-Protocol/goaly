@@ -72,9 +72,8 @@ describe('decideRebalance', () => {
     // Executes only within its own chain + asset (Arbitrum USDT0).
     expect(d.shouldRebalance).toBe(true);
     expect(d.to?.name).toBe('Steakhouse Prime USDT0');
-    // But the true best anywhere is the Base USDC vault — flagged cross-venue, not auto-executed.
+    // But the true best anywhere is the Base USDC vault — flagged cross-venue.
     expect(d.globalBest?.name).toBe('Steakhouse High Yield USDC');
     expect(d.crossVenue).toBe(true);
-    expect(d.reason).toContain('best anywhere');
   });
 });
