@@ -33,6 +33,9 @@ interface GoalyBoard {
 }
 
 const SITE_TZ_OFFSET_S = 7 * 3600; // kickoff strings are the site's wall time (~UTC+7)
+/** Matches stay bettable from now until this long after kickoff (covers the live match);
+ *  past it they're treated as finished. Also the on-chain market close window. */
+export const LIVE_MATCH_WINDOW_S = 150 * 60; // 2.5 h
 const SKIP_LEAGUE = /E-?FOOTBALL|ESPORT|FANTASY|VIRTUAL|SIMULAT|CYBER|SRL/i;
 const MAX_MATCHES = 12; // bounded so each new match's on-chain market stays a small burst
 const CACHE_TTL_MS = 4000; // the feed moves every few seconds; one fetch serves a sync tick
@@ -154,9 +157,8 @@ export class GoalyOddsProvider implements SportsDataProvider {
     return board;
   }
 
-  /** Upcoming real matches with usable odds. Bettable = kickoff still in the future and no real
-   *  numeric score yet (the feed uses the string "LIVE" as a pre-match placeholder, not a score).
-   *  Deduped by stable id so a fixture the feed lists twice never yields two markets. */
+  /** Bettable = upcoming OR live (within the live window after kickoff); finished (past it) drops
+   *  out. The feed can't tell live from finished, so we use kickoff + window. Deduped by stable id. */
   private kept(board: GoalyBoard): GoalyMatch[] {
     const nowS = Math.floor(this.now() / 1000);
     const seen = new Set<string>();
@@ -165,8 +167,7 @@ export class GoalyOddsProvider implements SportsDataProvider {
       const usable =
         m.home &&
         m.away &&
-        parseKickoff(m.kickoff) > nowS &&
-        !parseScore(m.score) &&
+        parseKickoff(m.kickoff) + LIVE_MATCH_WINDOW_S > nowS &&
         !SKIP_LEAGUE.test(m.league) &&
         (m.fulltime?.overunder?.line ?? 0) > 0;
       if (!usable) continue;

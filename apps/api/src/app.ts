@@ -103,10 +103,10 @@ function withMatchDetail<
     closingAwayBps: number | null;
   },
 >(db: DB, row: T, crests?: CrestService) {
-  // Frozen closing odds once kicked off; live cache before that.
+  // Live cache first (realtime — odds move during the match), frozen closing odds as fallback.
   return {
     ...withTeamMeta(row, crests),
-    odds: frozenOdds(row) ?? matchOdds(db, row.id, row.homeTeam, row.awayTeam),
+    odds: matchOdds(db, row.id, row.homeTeam, row.awayTeam) ?? frozenOdds(row),
   };
 }
 

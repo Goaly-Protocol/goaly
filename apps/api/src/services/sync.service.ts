@@ -4,7 +4,7 @@ import type { Env } from '../env';
 import type { DB } from '../db/client';
 import { apiUsage, matches, oddsCache, syncState } from '../db/schema';
 import { parseH2hOdds } from '../lib/odds';
-import type { QuotaInfo, SportsDataProvider } from '@goaly/plugin-odds';
+import { LIVE_MATCH_WINDOW_S, type QuotaInfo, type SportsDataProvider } from '@goaly/plugin-odds';
 
 export interface SyncDeps {
   db: DB;
@@ -85,7 +85,8 @@ export class SyncService {
           },
         })
         .run();
-      if (!known) await this.createMarketOnchainSafe(match.id, match.kickoff);
+      // Market stays open through the live match, so close time = kickoff + the live window.
+      if (!known) await this.createMarketOnchainSafe(match.id, match.kickoff + LIVE_MATCH_WINDOW_S);
     }
     this.record('events', quota);
     return data.length;
@@ -131,8 +132,7 @@ export class SyncService {
     const { db, provider, env } = this.deps;
     if (!this.due('odds', env.ODDS_REFRESH_INTERVAL_MS)) return 0;
 
-    // Only spend credits when a match is within the pre-kickoff window — odds are meaningful once
-    // lineups drop (~1h out), and matches already kicked off never need odds (betting is closed).
+    // Refresh odds for any still-bettable match: upcoming, or live (kicked off within the window).
     const nowS = Math.floor(this.now() / 1000);
     const approaching = db
       .select({ id: matches.id })
@@ -140,7 +140,7 @@ export class SyncService {
       .where(
         and(
           eq(matches.status, 'SCHEDULED'),
-          gt(matches.kickoff, nowS),
+          gt(matches.kickoff, nowS - LIVE_MATCH_WINDOW_S),
           lt(matches.kickoff, nowS + env.ODDS_FETCH_BEFORE_S),
         ),
       )
