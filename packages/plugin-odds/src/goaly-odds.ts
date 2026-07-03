@@ -38,7 +38,7 @@ const SITE_TZ_OFFSET_S = 7 * 3600; // kickoff strings are the site's wall time (
 export const LIVE_MATCH_WINDOW_S = 150 * 60; // 2.5 h
 const SKIP_LEAGUE = /E-?FOOTBALL|ESPORT|FANTASY|VIRTUAL|SIMULAT|CYBER|SRL/i;
 const MAX_MATCHES = 150; // show the whole board (API already filters finished); markets best-effort
-const CACHE_TTL_MS = 4000; // the feed moves every few seconds; one fetch serves a sync tick
+const CACHE_TTL_MS = 0; // no cache — always hit the API fresh (realtime), it can take the load
 
 /** Malay odds → decimal. `+0.90`→1.90, `-0.90`→2.11, `0`→2.00. */
 export function malayToDecimal(price: number | null | undefined): number | null {
