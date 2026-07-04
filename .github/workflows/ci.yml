@@ -23,26 +23,8 @@ jobs:
       - name: Typecheck
         run: bun run typecheck
       - name: Test (all TS packages)
-        run: bunx turbo run test --filter=!@goaly/contracts
+        run: bunx turbo run test
       - name: Prettier
         run: bunx prettier --check .
 
-  contracts:
-    name: Contracts (Foundry)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: 1.2.7
-      - name: Install node deps (LayerZero packages for remappings)
-        run: bun install --frozen-lockfile
-      - uses: foundry-rs/foundry-toolchain@v1
-      - name: Build
-        working-directory: packages/contracts
-        run: forge build --sizes
-      - name: Test (unit)
-        working-directory: packages/contracts
-        run: forge test --no-match-path 'test/fork/**' -vvv
+  # Contracts moved to their own repo (Goaly-Protocol/contracts) with their own Foundry CI.

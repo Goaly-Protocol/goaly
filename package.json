@@ -10,7 +10,11 @@
     "bun": ">=1.2.0"
   },
   "workspaces": [
-    "packages/*",
+    "packages/core",
+    "packages/plugin-odds",
+    "packages/plugin-onchain",
+    "packages/plugin-teams",
+    "packages/plugin-wdk",
     "apps/api"
   ],
   "scripts": {
@@ -22,9 +26,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "contracts:build": "bun run --filter @goaly/contracts build",
-    "contracts:test": "bun run --filter @goaly/contracts test"
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@wormhole-foundation/wormhole-solidity-sdk": "^1.1.0",
