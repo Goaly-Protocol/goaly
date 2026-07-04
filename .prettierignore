@@ -29,3 +29,6 @@ apps/landing
 LICENSE
 .env
 .env.*
+apps/docs/
+packages/contracts/
+bun.lock
