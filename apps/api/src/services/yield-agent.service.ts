@@ -9,7 +9,6 @@ import {
 import {
   fetchStablecoinVaults,
   fetchVaultSnapshots,
-  migrateYieldVault,
   readYieldVault,
 } from '@goaly/plugin-onchain';
 import type { WalletProvider } from '@goaly/plugin-wdk';
@@ -46,9 +45,10 @@ export interface YieldAgentDeps {
 }
 
 /**
- * The Goaly Yield Agent — an autonomous WDK agent wallet that watches Morpho USDT0 vault APYs and
- * migrates the protocol's backing to the best risk-adjusted vault. Deciding is pure ({@link decideRebalance});
- * this service adds the live reads, optional on-chain execution, and a cached status for the UI/API.
+ * The Goaly Yield Agent — a WDK agent wallet that watches Morpho USDT0 vault APYs and recommends the
+ * best risk-adjusted vault for the protocol's backing. Deciding is pure ({@link decideRebalance});
+ * this service adds the live reads + a cached status for the UI/API. Advisory only: the vault has a
+ * single whitelisted strategy today, so the decision is surfaced but never executed on-chain.
  */
 export class YieldAgentService {
   private status: YieldAgentStatus;
@@ -73,8 +73,8 @@ export class YieldAgentService {
     return this.status;
   }
 
-  /** Read the current vault + APYs, decide, and (when `execute`) migrate. Returns the fresh status. */
-  async run(execute: boolean = this.deps.autoExecute ?? false): Promise<YieldAgentStatus> {
+  /** Read the current vault + APYs and decide. Advisory only — the decision is surfaced, not executed. */
+  async run(_execute: boolean = this.deps.autoExecute ?? false): Promise<YieldAgentStatus> {
     const now = (this.deps.now ?? Date.now)();
     const currentAddress = await readYieldVault(this.deps.client, this.deps.vault);
     const fetchOpt = this.deps.fetchFn ? { fetchFn: this.deps.fetchFn } : {};
@@ -119,13 +119,9 @@ export class YieldAgentService {
         })) ?? ai;
     }
 
-    let lastTxHash = this.status.lastTxHash;
-    if (execute && decision.shouldRebalance && decision.to && this.deps.wallet) {
-      lastTxHash = await migrateYieldVault(this.deps.wallet, {
-        vault: this.deps.vault,
-        newYieldVault: decision.to.address as Address,
-      });
-    }
+    // Advisory only — the vault currently has a single whitelisted strategy, so there is nothing to
+    // rebalance on-chain. We compute + surface the decision, but never execute.
+    const lastTxHash = this.status.lastTxHash;
 
     this.status = {
       vault: this.deps.vault,

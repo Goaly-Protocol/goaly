@@ -337,7 +337,7 @@ export function createApp(deps: AppDeps): Hono {
       provider: deps.env.ARBITRUM_RPC_URL,
     });
     const txHash = await settleMarket(wallet, {
-      pool: ARBITRUM.goaly.pool as `0x${string}`,
+      markets: ARBITRUM.goaly.markets as `0x${string}`,
       marketId,
       result,
       winningOddsBps: oddsBps,

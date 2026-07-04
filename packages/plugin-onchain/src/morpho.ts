@@ -119,38 +119,65 @@ export async function fetchStablecoinVaults(
   }
 }
 
-/** GoalyVault view + MANAGER_ROLE migrate. */
+/** GoalyVault agent surface — read the current strategy + rebalance across strategies. */
+const ZERO: Address = '0x0000000000000000000000000000000000000000';
+
 export const vaultAgentAbi = [
   {
     type: 'function',
-    name: 'yieldVault',
+    name: 'strategies',
     stateMutability: 'view',
     inputs: [],
-    outputs: [{ type: 'address' }],
+    outputs: [{ type: 'address[]' }],
   },
   {
     type: 'function',
-    name: 'migrateYieldVault',
+    name: 'rebalance',
     stateMutability: 'nonpayable',
-    inputs: [{ name: 'newYieldVault', type: 'address' }],
+    inputs: [
+      { name: 'strategies', type: 'address[]' },
+      { name: 'targets', type: 'uint256[]' },
+    ],
     outputs: [],
   },
 ] as const;
 
-/** The Morpho vault currently backing goUSDT. */
+/** A strategy exposes the Morpho vault it wraps. */
+const strategyAbi = [
+  {
+    type: 'function',
+    name: 'morpho',
+    stateMutability: 'view',
+    inputs: [],
+    outputs: [{ type: 'address' }],
+  },
+] as const;
+
+/** The Morpho vault currently backing the pool — the underlying of the vault's first strategy. */
 export async function readYieldVault(client: PublicClient, vault: Address): Promise<Address> {
-  return client.readContract({ address: vault, abi: vaultAgentAbi, functionName: 'yieldVault' });
+  const strategies = await client.readContract({
+    address: vault,
+    abi: vaultAgentAbi,
+    functionName: 'strategies',
+  });
+  const [first] = strategies;
+  if (!first) return ZERO;
+  return client.readContract({
+    address: first,
+    abi: strategyAbi,
+    functionName: 'morpho',
+  });
 }
 
-/** Migrate the vault's backing to `newYieldVault` (agent wallet, MANAGER_ROLE). */
-export async function migrateYieldVault(
+/** Rebalance the vault's principal across whitelisted strategies (agent wallet, AGENT_ROLE). */
+export async function rebalanceVault(
   wallet: WalletProvider,
-  params: { vault: Address; newYieldVault: Address },
+  params: { vault: Address; strategies: Address[]; targets: bigint[] },
 ): Promise<string> {
   const data = encodeFunctionData({
     abi: vaultAgentAbi,
-    functionName: 'migrateYieldVault',
-    args: [params.newYieldVault],
+    functionName: 'rebalance',
+    args: [params.strategies, params.targets],
   });
   return wallet.sendTransaction({ to: params.vault, data });
 }

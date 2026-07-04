@@ -4,20 +4,20 @@ import { parseAbiItem } from 'viem';
 import type { DB } from '../db/client';
 import { matches, predictions } from '../db/schema';
 
-const PREDICTION_PLACED = parseAbiItem(
-  'event PredictionPlaced(bytes32 indexed marketId, address indexed user, uint8 outcome, address token, uint256 tokenIn, uint256 stake)',
+const PREDICTED = parseAbiItem(
+  'event Predicted(bytes32 indexed marketId, address indexed user, uint8 outcome, uint256 stake)',
 );
 const OUTCOMES = ['HOME', 'DRAW', 'AWAY'] as const;
 const CHUNK = 9_000n;
 
 /**
- * Indexes on-chain `PredictionPlaced` events into the predictions table so a wallet's bets always
+ * Indexes on-chain `Predicted` events into the predictions table so a wallet's bets always
  * show — even if the client's off-chain record POST failed (blocked network, etc.). The chain is the
  * source of truth. Idempotent: one row per (tx, log), keyed so re-scans never duplicate.
  */
 export function createBetIndexer(db: DB, rpcUrl: string) {
   const client = createArbitrumClient(rpcUrl);
-  const pool = ARBITRUM.goaly.pool as `0x${string}`;
+  const markets = ARBITRUM.goaly.markets as `0x${string}`;
   let cursor = BigInt(ARBITRUM.goaly.deployBlock);
 
   return async function indexBets(): Promise<number> {
@@ -34,8 +34,8 @@ export function createBetIndexer(db: DB, rpcUrl: string) {
     while (from <= latest) {
       const to = from + CHUNK > latest ? latest : from + CHUNK;
       const logs = await client.getLogs({
-        address: pool,
-        event: PREDICTION_PLACED,
+        address: markets,
+        event: PREDICTED,
         fromBlock: from,
         toBlock: to,
       });
