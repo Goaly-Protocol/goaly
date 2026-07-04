@@ -48,7 +48,7 @@ describe('YieldAgentService', () => {
     expect(status.canExecute).toBe(false);
   });
 
-  test('executes the migration when asked and a wallet is present', async () => {
+  test('is advisory even with a wallet — computes the decision but never auto-executes', async () => {
     const wallet = { sendTransaction: async () => '0xtxhash' };
     const agent = new YieldAgentService({
       client: clientAt(GAUNTLET),
@@ -59,7 +59,8 @@ describe('YieldAgentService', () => {
       fetchFn: morphoFetch,
     });
     const status = await agent.run(true);
-    expect(status.lastTxHash).toBe('0xtxhash');
-    expect(status.canExecute).toBe(true);
+    expect(status.decision?.shouldRebalance).toBe(true); // decision still surfaced
+    expect(status.lastTxHash).toBeNull(); // advisory — no on-chain execution
+    expect(status.canExecute).toBe(true); // wallet present, execution deferred to governance
   });
 });
