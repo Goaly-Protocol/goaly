@@ -39,7 +39,7 @@ const settleOnchain = oracleWallet
       const oddsBps =
         (row ? closingWinningOddsBps(row, result) : null) ?? winningOddsBps(liveOdds, result);
       await settleMarket(oracleWallet, {
-        pool: ARBITRUM.goaly.pool as `0x${string}`,
+        markets: ARBITRUM.goaly.markets as `0x${string}`,
         marketId: marketIdFor(matchId),
         result,
         winningOddsBps: oddsBps,
@@ -50,7 +50,7 @@ const settleOnchain = oracleWallet
 const createMarketOnchain = oracleWallet
   ? async (matchId: string, closeTime: number) => {
       await createMarket(oracleWallet, {
-        pool: ARBITRUM.goaly.pool as `0x${string}`,
+        markets: ARBITRUM.goaly.markets as `0x${string}`,
         marketId: marketIdFor(matchId),
         closeTime: BigInt(closeTime),
       });
@@ -67,10 +67,10 @@ const sync = new SyncService({
 });
 const predictions = new PredictionService(db, BigInt(env.PROTOCOL_FEE_BPS));
 
-// Autonomous yield agent — watches Morpho USDT0 vaults + rebalances GoalyPool's backing (WDK wallet).
+// Autonomous yield agent — watches Morpho USDT0 vaults + advises on the vault's backing (WDK wallet).
 const yieldAgent = new YieldAgentService({
   client: createArbitrumClient(env.ARBITRUM_RPC_URL),
-  vault: ARBITRUM.goaly.pool as `0x${string}`,
+  vault: ARBITRUM.goaly.vault as `0x${string}`,
   candidateVaults: [
     ARBITRUM.morphoVaults.gauntletUsdt0Core,
     ARBITRUM.morphoVaults.steakhousePrimeUsdt0,
@@ -82,14 +82,16 @@ const yieldAgent = new YieldAgentService({
   params: { minApyGainBps: env.AGENT_MIN_APY_GAIN_BPS, minTvlUsd: env.AGENT_MIN_TVL_USD },
   ...(oracleWallet ? { wallet: oracleWallet } : {}),
   ...(env.OPENAI_KEY ? { openaiKey: env.OPENAI_KEY } : {}),
-  autoExecute: env.AGENT_AUTO_REBALANCE,
+  // Advisory only — the new vault has a single whitelisted strategy, so there is nothing to
+  // auto-rebalance yet. Keep the decision/display, but never execute on-chain.
+  autoExecute: false,
 });
 
 // Club crests (national teams use flags directly); resolved in the background + cached.
 const crests = new CrestService(db);
 const app = createApp({ db, env, sync, predictions, yieldAgent, crests });
 
-// Index on-chain bets (PredictionPlaced) into the DB so a wallet's bets always show, even if the
+// Index on-chain bets (Predicted) into the DB so a wallet's bets always show, even if the
 // client's off-chain record POST failed. The chain is the source of truth.
 const indexBets = createBetIndexer(db, env.ARBITRUM_RPC_URL);
 const BET_TICK_MS = 20 * 1000;

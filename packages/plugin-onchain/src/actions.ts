@@ -2,30 +2,24 @@ import type { Outcome } from '@goaly/core';
 import type { WalletProvider } from '@goaly/plugin-wdk';
 import { type Address, type Hex, encodeFunctionData, erc20Abi } from 'viem';
 
-/** Write ABI fragments for GoalyPool player actions. */
-export const goalyPoolAbi = [
+/** Write ABI fragments for GoalyMarkets player actions. */
+export const goalyMarketsAbi = [
   {
     type: 'function',
-    name: 'placePrediction',
+    name: 'predict',
     stateMutability: 'nonpayable',
     inputs: [
       { name: 'marketId', type: 'bytes32' },
       { name: 'outcome', type: 'uint8' },
-      { name: 'token', type: 'address' },
       { name: 'amount', type: 'uint256' },
-      { name: 'minStake', type: 'uint256' },
     ],
-    outputs: [{ type: 'uint256' }],
+    outputs: [],
   },
   {
     type: 'function',
     name: 'claim',
     stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'marketId', type: 'bytes32' },
-      { name: 'outToken', type: 'address' },
-      { name: 'minOut', type: 'uint256' },
-    ],
+    inputs: [{ name: 'marketId', type: 'bytes32' }],
     outputs: [{ type: 'uint256' }, { type: 'uint256' }],
   },
 ] as const;
@@ -33,58 +27,47 @@ export const goalyPoolAbi = [
 /** Solidity `enum Outcome { HOME, DRAW, AWAY }` ordering. */
 const OUTCOME_INDEX: Record<Outcome, number> = { HOME: 0, DRAW: 1, AWAY: 2 };
 
-export interface PlacePredictionParams {
-  pool: Address;
-  /** Stake token the player pays with (USDT0 / USDC / USDT). */
-  token: Address;
+export interface PredictParams {
+  markets: Address;
+  /** USDT0 token — the stake asset. */
+  usdt0: Address;
   marketId: Hex;
   outcome: Outcome;
   amount: bigint;
-  /** Minimum USDT0 stake after the token→USDT0 swap (slippage guard). */
-  minStake?: bigint;
 }
 
-/** Approve the stake token to the pool, then predict — the pool normalises it to USDT0 + earns yield. */
-export async function placePrediction(
+/** Approve USDT0 to GoalyMarkets, then predict — the stake is deposited into the vault to earn yield. */
+export async function predict(
   wallet: WalletProvider,
-  params: PlacePredictionParams,
-): Promise<{ approveHash: string; placeHash: string }> {
+  params: PredictParams,
+): Promise<{ approveHash: string; predictHash: string }> {
   const approveData = encodeFunctionData({
     abi: erc20Abi,
     functionName: 'approve',
-    args: [params.pool, params.amount],
+    args: [params.markets, params.amount],
   });
-  const approveHash = await wallet.sendTransaction({ to: params.token, data: approveData });
+  const approveHash = await wallet.sendTransaction({ to: params.usdt0, data: approveData });
 
-  const placeData = encodeFunctionData({
-    abi: goalyPoolAbi,
-    functionName: 'placePrediction',
-    args: [
-      params.marketId,
-      OUTCOME_INDEX[params.outcome],
-      params.token,
-      params.amount,
-      params.minStake ?? 0n,
-    ],
+  const predictData = encodeFunctionData({
+    abi: goalyMarketsAbi,
+    functionName: 'predict',
+    args: [params.marketId, OUTCOME_INDEX[params.outcome], params.amount],
   });
-  const placeHash = await wallet.sendTransaction({ to: params.pool, data: placeData });
-  return { approveHash, placeHash };
+  const predictHash = await wallet.sendTransaction({ to: params.markets, data: predictData });
+  return { approveHash, predictHash };
 }
 
 export interface ClaimParams {
-  pool: Address;
+  markets: Address;
   marketId: Hex;
-  /** Token to receive the stake (+ prize) in — USDT0 / USDC / USDT. */
-  outToken: Address;
-  minOut?: bigint;
 }
 
-/** Claim a settled market: reclaim your stake (+ any prize), paid out in `outToken`. */
+/** Claim a settled market — reclaim your stake (+ any prize), always paid out in USDT0. */
 export async function claimPayout(wallet: WalletProvider, params: ClaimParams): Promise<string> {
   const data = encodeFunctionData({
-    abi: goalyPoolAbi,
+    abi: goalyMarketsAbi,
     functionName: 'claim',
-    args: [params.marketId, params.outToken, params.minOut ?? 0n],
+    args: [params.marketId],
   });
-  return wallet.sendTransaction({ to: params.pool, data });
+  return wallet.sendTransaction({ to: params.markets, data });
 }

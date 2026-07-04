@@ -20,11 +20,15 @@ export const ARBITRUM = {
     gauntletUsdcCore: '0x7e97fa6893871A2751B5fE961978DCCb2c201E65',
     steakhouseHighYieldUsdc: '0x5c0C306Aaa9F877de636f4d5822cA9F2E81563BA',
   },
-  /** Goaly on Arbitrum One. GoalyPool = no-loss prediction markets with a built-in Morpho yield
-   *  engine — players stake stablecoins directly (no receipt token), claim back in any stablecoin. */
+  /** Goaly protocol on Arbitrum One — a layered no-loss system:
+   *  - markets:    prediction layer (predict / claim / settle), deposits stakes into the vault
+   *  - vault:      ERC-4626 yield vault the agent allocates across strategies
+   *  - settlement: optimistic settlement oracle (bonded propose → dispute window → finalize) */
   goaly: {
-    pool: '0x009b57aefAC6b10dF71a49982Eb3f678D2b4966C',
-    deployBlock: 480000000,
+    markets: '0xFAcaD2Cbc3b6320239389aD5c2F597DeE95f1fd3',
+    vault: '0xFe424b5b85C742C15CCB09d62873bE72577CD7Ef',
+    settlement: '0xC03BB9526D6F0308d8Ba0831e85f93db3E45e201',
+    deployBlock: 480301271,
   },
 } as const;
 
