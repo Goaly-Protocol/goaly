@@ -6,11 +6,7 @@ import {
   type RebalanceParams,
   type VaultSnapshot,
 } from '@goaly/core';
-import {
-  fetchStablecoinVaults,
-  fetchVaultSnapshots,
-  readYieldVault,
-} from '@goaly/plugin-onchain';
+import { fetchStablecoinVaults, fetchVaultSnapshots, readYieldVault } from '@goaly/plugin-onchain';
 import type { WalletProvider } from '@goaly/plugin-wdk';
 import { aiRebalanceRationale } from './ai-agent';
 import type { Address, PublicClient } from 'viem';
