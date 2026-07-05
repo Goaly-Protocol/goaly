@@ -9,15 +9,19 @@ cd ~/goaly/apps/indexer || { echo "indexer dir missing"; exit 1; }
 echo "===== install ====="
 bun install
 
-echo "===== (re)start goaly-indexer ====="
-# Ponder serves its GraphQL/HTTP API on 0.0.0.0:42069 by default (what nginx proxies to).
-if ! pm2 restart goaly-indexer --update-env; then
-  pm2 start bun --name goaly-indexer -- run start
-fi
+echo "===== start script on the VPS (must contain --schema) ====="
+grep '"start"' package.json || true
+
+echo "===== fresh (re)start goaly-indexer ====="
+# Delete + start fresh so pm2 always picks up the current package.json/args (a plain restart can
+# keep a crash-looped process on stale args). Ponder serves on 0.0.0.0:42069 (what nginx proxies to).
+pm2 delete goaly-indexer >/dev/null 2>&1 || true
+pm2 flush goaly-indexer >/dev/null 2>&1 || true
+pm2 start bun --name goaly-indexer -- run start
 pm2 save
 
 echo "===== wait for boot ====="
-sleep 12
+sleep 15
 
 echo "===== pm2 status ====="
 pm2 describe goaly-indexer 2>/dev/null | grep -Ei "status|restarts|script path|exec cwd|out log|error log" || true
