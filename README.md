@@ -1,11 +1,31 @@
 # Goaly
 
-> No-loss football prediction on Arbitrum. Stake USDT on match outcomes — your principal is
-> never at risk. Only the yield it earns funds the prizes.
+> A self-custodial wallet app for football, on Arbitrum. Every player gets a **Tether WDK** wallet —
+> keys on their device, no seed phrase — to stake and get paid in USDT. Your principal is never at
+> risk: an autonomous agent puts the pool to work in DeFi, and only the yield it earns funds the prizes.
 
-Built for the **Tether Developers Cup** (WDK track).
+Built for the **Tether Developers Cup** — **WDK (Wallets)** track.
 
 **Live:** [app.goaly.fun](https://app.goaly.fun) · [api.goaly.fun](https://api.goaly.fun) ([docs](https://api.goaly.fun/docs)) · [goaly.fun](https://goaly.fun)
+
+## Built on Tether WDK
+
+Goaly is a WDK app end to end — both the player and the agent hold their own keys:
+
+- **Self-custodial player wallet.** Every account is a WDK wallet
+  ([`@tetherto/wdk-wallet-evm`](https://www.npmjs.com/package/@tetherto/wdk-wallet-evm)) whose keys
+  live on the user's device — no seed phrase to write down. It's derived deterministically from an
+  EIP-712 sign-in signature, so it always restores from the user's connected wallet. Players **pay,
+  claim, and send USDT** straight from it; WDK handles wallet creation, signing, and accounts.
+- **Autonomous agent wallet.** The yield agent runs on its _own_ WDK wallet, reads Morpho APYs, and
+  reallocates the pooled USDt across DeFi — an agent wallet doing autonomous finance, settling
+  on-chain in USDt.
+- **Safe by design.** App/agent logic is cleanly separated from wallet execution, and on-chain roles
+  are least-privilege: the agent can only rebalance between whitelisted strategies — it can never
+  touch principal or move funds to an EOA. Recovery is deterministic re-derivation, so there's
+  nothing to lose.
+
+Football is the theme; self-custody is the point.
 
 ## How it works
 
@@ -34,14 +54,12 @@ A layered protocol, all deployed and Arbiscan-verified on **Arbitrum One**:
 Players always stake and withdraw USDT; internally the vault's yield can be earned in USDT0 or USDC.
 Contract source lives in its own repo, [Goaly-Protocol/contracts](https://github.com/Goaly-Protocol/contracts).
 
-### Yield agent (WDK)
+### Yield agent
 
-An autonomous agent reads Morpho vault APYs and the vault's whitelisted strategies and can
-`rebalance()` the pool toward the best risk-adjusted option. It runs on a self-custodial **Tether WDK**
-wallet ([`@tetherto/wdk-wallet-evm`](https://www.npmjs.com/package/@tetherto/wdk-wallet-evm)) and is
-advisory / governance-gated — it can only move funds between the buffer and whitelisted strategies,
-never to an EOA. The dApp also ships an in-app WDK **embedded wallet**: create or import a BIP-39
-wallet in the browser, keys stay on-device.
+The agent reads Morpho vault APYs and the vault's whitelisted strategies and can `rebalance()` the pool
+toward the best risk-adjusted option. It is advisory / governance-gated — same-chain moves only, never
+to an EOA — so principal always stays on Arbitrum and claims stay no-loss. It signs on its own Tether
+WDK wallet; see [Built on Tether WDK](#built-on-tether-wdk).
 
 ## Repo layout
 
