@@ -26,10 +26,16 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc,md,mdx,css,yml,yaml}": "prettier --write"
   },
   "devDependencies": {
     "@wormhole-foundation/wormhole-solidity-sdk": "^1.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
     "prettier": "^3.9.4",
     "turbo": "^2.3.3",
     "typescript": "^5.7.2"
