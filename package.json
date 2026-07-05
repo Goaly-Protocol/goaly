@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Goaly — no-loss football prediction powered by self-repaying yield (Tether Developers Cup, WDK track)",
+  "description": "Goaly — no-loss football prediction on Arbitrum, prizes funded by Morpho yield (Tether Developers Cup, WDK track)",
   "license": "Apache-2.0",
   "packageManager": "bun@1.2.7",
   "engines": {

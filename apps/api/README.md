@@ -1,45 +1,52 @@
 # @goaly/api
 
-Bun + Hono + Drizzle (SQLite) API for Goaly. Serves match data, predictions and
-settlement, and keeps the cache fresh with a **credit-aware** sync against The Odds API.
+The backend for [Goaly](https://api.goaly.fun) — a **Bun + Hono + Drizzle** (SQLite) API. It serves
+match data, football standings and the bracket, user predictions, and the autonomous yield agent's
+status. All user-facing routes read a local cache, so they never depend on a paid upstream.
 
 ## Run
 
 ```bash
 bun run --filter @goaly/api dev     # http://localhost:3001
+bun test                            # tests
 ```
 
 - API reference (Scalar): `GET /docs`
 - OpenAPI spec: `GET /openapi.json`
 
-## The Odds API credit strategy (free tier = 500 credits/month)
+## What it serves
 
-The golden rule: **user requests never call the odds API.** Every user-facing route reads
-the local SQLite cache; only the background `SyncService.tick()` spends credits.
+| Route | Description |
+| --- | --- |
+| `GET /matches`, `/matches/:id` | Bettable fixtures with team metadata and odds (cached) |
+| `GET /standings` | Group standings, enriched with team flags |
+| `GET /bracket`, `/bracket/viewer` | Knockout bracket (plain + brackets-viewer.js shape) |
+| `GET /predictions?userId=` | A wallet's predictions, joined to their matches |
+| `POST /predictions` | Record an off-chain prediction |
+| `GET /agent` | Yield agent status; `POST /agent/run` refreshes the decision, `POST /agent/rebalance` executes it on-chain |
+| `POST /admin/*` | Sync, manual result/settlement, on-chain settlement, credit usage |
+| `GET /health` | Liveness |
 
-| Sync step    | Endpoint  | Cost                | When it runs                                                                             |
-| ------------ | --------- | ------------------- | ---------------------------------------------------------------------------------------- |
-| `syncEvents` | `/events` | **0** (free)        | every tick — our source of fixtures + kickoff times                                      |
-| `syncScores` | `/scores` | 1 (2 w/ `daysFrom`) | only when due _and_ a match is ≥ `ODDS_SETTLE_BUFFER_S` past kickoff and still unsettled |
-| `syncOdds`   | `/odds`   | markets × regions   | only when due _and_ estimated credits > `ODDS_CREDIT_RESERVE`                            |
+## On-chain bet indexer
 
-Extra guards:
+The chain is the source of truth for predictions. A background indexer scans `GoalyMarkets`
+`Predicted` events on Arbitrum (from the deploy block, in block chunks) and upserts them into the
+predictions table — idempotently, one row per log. So a wallet's bets always show even if the
+client's off-chain `POST /predictions` failed (e.g. a blocked network).
 
-- **Reserve** — odds refreshes are skipped once credits drop near the reserve, so
-  settlement (`/scores`) always has budget.
-- **Throttles** — `ODDS_REFRESH_INTERVAL_MS` / `ODDS_SCORES_INTERVAL_MS` cap call frequency.
-- **Usage tracking** — every paid call records `x-requests-remaining` into `api_usage`;
-  see `GET /admin/usage`.
+When `ORACLE_PK` is configured, finished matches also auto-settle their on-chain market via a WDK
+signer.
 
-## Key rotation / fallback
+## Odds sync (The Odds API — free tier)
 
-Set multiple keys via `THE_ODDS_API_KEYS` (comma-separated). `TheOddsApiProvider` uses a
-`KeyRing`: on `401`/`429` it rotates to the next key, so N free keys give ≈ N×500 credits
-of headroom and automatic failover. `SyncService.creditsRemaining()` accounts for the
-spare keys.
+User requests never call the odds API; only the background `SyncService.tick()` spends credits.
 
-## Football results / settlement oracle
+| Sync step | Endpoint | Cost | When |
+| --- | --- | --- | --- |
+| `syncEvents` | `/events` | 0 (free) | every tick — fixtures + kickoff times |
+| `syncScores` | `/scores` | 1–2 | a match is past kickoff and still unsettled |
+| `syncOdds` | `/odds` | markets × regions | due, and estimated credits stay above the reserve |
 
-MVP settlement uses either The Odds API `/scores` (completed games) or the admin route
-`POST /admin/matches/:id/result` (manual oracle, disclosed). An on-chain oracle is the
-roadmap for trust-minimized settlement.
+A credit **reserve** protects settlement budget, `ODDS_*_INTERVAL_MS` throttles cap call frequency,
+and every paid call records `x-requests-remaining` into `api_usage` (see `GET /admin/usage`). Set
+multiple comma-separated keys via `THE_ODDS_API_KEYS` for rotation and failover on `401`/`429`.
