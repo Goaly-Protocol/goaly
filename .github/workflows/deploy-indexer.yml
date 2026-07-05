@@ -36,4 +36,12 @@ jobs:
         run: |
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "bash -lc 'cd ~/goaly/apps/indexer && bun install && { pm2 restart goaly-indexer --update-env || pm2 start bun --name goaly-indexer -- run start; } && pm2 save'"
+            "bash -l ~/goaly/apps/indexer/scripts/vps-deploy.sh"
+
+      - name: Ensure TLS certificate (certbot)
+        # Idempotent: --keep-until-expiring skips reissue when a valid cert already exists.
+        # Best-effort — a missing certbot/sudo won't fail the deploy.
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "bash -lc 'sudo certbot --nginx -d indexer.goaly.fun --non-interactive --agree-tos -m admin@goaly.fun --redirect --keep-until-expiring && sudo nginx -t && sudo systemctl reload nginx || echo CERTBOT_STEP_FAILED'"
