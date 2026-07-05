@@ -9,7 +9,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { z } from 'zod';
 import type { DB } from './db/client';
-import { apiUsage, matches, oddsCache, predictions } from './db/schema';
+import { apiUsage, matches, oddsCache, predictions, termsAcceptances } from './db/schema';
 import type { Env } from './env';
 import { toBracketsViewer } from './lib/brackets-viewer';
 import { HttpError } from './lib/errors';
@@ -62,6 +62,12 @@ const placeBody = z.object({
 const resultBody = z.object({
   homeScore: z.number().int().min(0),
   awayScore: z.number().int().min(0),
+});
+
+const termsBody = z.object({
+  address: z.string().regex(/^0x[0-9a-f]{40}$/i, 'address must be a 20-byte hex'),
+  version: z.string().min(1),
+  signature: z.string().regex(/^0x[0-9a-f]+$/i, 'signature must be hex'),
 });
 
 /** National-team meta (name, FIFA code, flag), else a club crest from the cache, else null. */
@@ -291,6 +297,34 @@ export function createApp(deps: AppDeps): Hono {
       return { ...prediction, match: match ? withTeamMeta(match, crests) : null };
     });
     return c.json({ predictions: enriched });
+  });
+
+  // Record a signed Terms & Conditions acceptance (EIP-712 signature is the proof). Idempotent per
+  // (address, version) so the same acceptance can be re-posted without duplicating.
+  app.post('/terms/accept', async (c) => {
+    const body = termsBody.parse(await c.req.json());
+    const address = body.address.toLowerCase();
+    db.insert(termsAcceptances)
+      .values({
+        id: `${address}-${body.version}`,
+        address,
+        version: body.version,
+        signature: body.signature,
+        acceptedAt: Date.now(),
+      })
+      .onConflictDoNothing()
+      .run();
+    return c.json({ ok: true }, 201);
+  });
+
+  app.get('/terms/:address', (c) => {
+    const address = c.req.param('address').toLowerCase();
+    const acceptances = db
+      .select()
+      .from(termsAcceptances)
+      .where(eq(termsAcceptances.address, address))
+      .all();
+    return c.json({ acceptances });
   });
 
   // ── Admin: sync, oracle result, settlement, credit usage ──

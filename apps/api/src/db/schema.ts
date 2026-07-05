@@ -32,6 +32,15 @@ export const predictions = sqliteTable('predictions', {
   payout: text('payout'),
 });
 
+/** Legal terms acceptance — one row per (account, terms version), with the EIP-712 signature as proof. */
+export const termsAcceptances = sqliteTable('terms_acceptances', {
+  id: text('id').primaryKey(), // `${address}-${version}`
+  address: text('address').notNull(),
+  version: text('version').notNull(),
+  signature: text('signature').notNull(),
+  acceptedAt: integer('accepted_at').notNull(),
+});
+
 /** Odds snapshot cache (optional display data), keyed by match. */
 export const oddsCache = sqliteTable('odds_cache', {
   matchId: text('match_id').primaryKey(),
