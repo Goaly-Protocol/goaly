@@ -61,6 +61,10 @@ const placeBody = z.object({
   matchId: z.string().min(1),
   pick: pickSchema,
   stake: z.string().regex(/^\d+$/, 'stake must be an integer string of base units'),
+  txHash: z
+    .string()
+    .regex(/^0x[0-9a-f]{64}$/i)
+    .optional(),
 });
 
 const resultBody = z.object({
@@ -305,6 +309,7 @@ export function createApp(deps: AppDeps): Hono {
       matchId: body.matchId,
       pick: body.pick,
       stake: BigInt(body.stake),
+      ...(body.txHash ? { txHash: body.txHash } : {}),
     });
     return c.json(created, 201);
   });
