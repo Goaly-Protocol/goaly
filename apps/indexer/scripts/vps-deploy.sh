@@ -39,9 +39,12 @@ curl -sS -m 6 -o /dev/null -w "local http: %{http_code}\n" http://127.0.0.1:4206
 echo "===== recent logs ====="
 pm2 logs goaly-indexer --lines 40 --nostream 2>/dev/null || true
 
-echo "===== nginx: how is indexer.goaly.fun routed? (read-only) ====="
-sudo nginx -T 2>/dev/null | grep -nE "server_name|proxy_pass|listen |root " | grep -iE "indexer.goaly|42069|4200|proxy_pass|server_name .*goaly|listen .*443" | head -40 || echo "(no sudo / nothing)"
-echo "----- files mentioning indexer.goaly.fun -----"
-sudo grep -rl "indexer.goaly.fun" /etc/nginx/ 2>/dev/null || echo "(none / no sudo)"
+echo "===== indexer.goaly.fun nginx block (what port does it expect?) ====="
+sudo grep -n -A18 "server_name indexer.goaly.fun" /etc/nginx/sites-available/default 2>/dev/null \
+  | grep -iE "server_name|proxy_pass|listen|location|root|ssl_certificate " | head -30 || echo "(no sudo / not found)"
+
+echo "===== is Ponder actually listening on :42069? ====="
+curl -s -o /dev/null -w "127.0.0.1:42069 -> %{http_code}\n" --max-time 5 http://127.0.0.1:42069/ || echo "42069 not responding"
+sudo ss -ltnp 2>/dev/null | grep -iE ":4206|:420|bun|node" | head
 
 echo "===== done ====="
