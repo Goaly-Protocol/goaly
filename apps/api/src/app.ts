@@ -317,7 +317,7 @@ export function createApp(deps: AppDeps): Hono {
     c.json(predictionService.settleMatch(c.req.param('id'))),
   );
 
-  // Settle the corresponding on-chain PredictionPool market from the finished match result.
+  // Settle the corresponding on-chain GoalyMarkets market from the finished match result.
   app.post('/admin/matches/:id/settle-onchain', async (c) => {
     const oraclePk = deps.env.ORACLE_PK;
     if (!oraclePk) throw new HttpError(501, 'ORACLE_PK not configured');
