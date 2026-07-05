@@ -20,7 +20,7 @@ const schema = z.object({
   /** Private key of the funded faucet wallet. When absent the faucet is DISABLED. */
   FAUCET_PK: z.string().optional(),
   /** ETH sent per drip. */
-  FAUCET_DRIP_ETH: z.string().default('0.0003'),
+  FAUCET_DRIP_ETH: z.string().default('0.0001'),
   /** Skip the drip if the account already holds ≥ this much ETH. */
   FAUCET_MIN_BALANCE_ETH: z.string().default('0.0002'),
   /** Max drips per UTC day (anti-drain cap). */
