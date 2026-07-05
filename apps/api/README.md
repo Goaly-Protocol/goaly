@@ -16,16 +16,16 @@ bun test                            # tests
 
 ## What it serves
 
-| Route | Description |
-| --- | --- |
-| `GET /matches`, `/matches/:id` | Bettable fixtures with team metadata and odds (cached) |
-| `GET /standings` | Group standings, enriched with team flags |
-| `GET /bracket`, `/bracket/viewer` | Knockout bracket (plain + brackets-viewer.js shape) |
-| `GET /predictions?userId=` | A wallet's predictions, joined to their matches |
-| `POST /predictions` | Record an off-chain prediction |
-| `GET /agent` | Yield agent status; `POST /agent/run` refreshes the decision, `POST /agent/rebalance` executes it on-chain |
-| `POST /admin/*` | Sync, manual result/settlement, on-chain settlement, credit usage |
-| `GET /health` | Liveness |
+| Route                             | Description                                                                                                |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `GET /matches`, `/matches/:id`    | Bettable fixtures with team metadata and odds (cached)                                                     |
+| `GET /standings`                  | Group standings, enriched with team flags                                                                  |
+| `GET /bracket`, `/bracket/viewer` | Knockout bracket (plain + brackets-viewer.js shape)                                                        |
+| `GET /predictions?userId=`        | A wallet's predictions, joined to their matches                                                            |
+| `POST /predictions`               | Record an off-chain prediction                                                                             |
+| `GET /agent`                      | Yield agent status; `POST /agent/run` refreshes the decision, `POST /agent/rebalance` executes it on-chain |
+| `POST /admin/*`                   | Sync, manual result/settlement, on-chain settlement, credit usage                                          |
+| `GET /health`                     | Liveness                                                                                                   |
 
 ## On-chain bet indexer
 
@@ -41,11 +41,11 @@ signer.
 
 User requests never call the odds API; only the background `SyncService.tick()` spends credits.
 
-| Sync step | Endpoint | Cost | When |
-| --- | --- | --- | --- |
-| `syncEvents` | `/events` | 0 (free) | every tick — fixtures + kickoff times |
-| `syncScores` | `/scores` | 1–2 | a match is past kickoff and still unsettled |
-| `syncOdds` | `/odds` | markets × regions | due, and estimated credits stay above the reserve |
+| Sync step    | Endpoint  | Cost              | When                                              |
+| ------------ | --------- | ----------------- | ------------------------------------------------- |
+| `syncEvents` | `/events` | 0 (free)          | every tick — fixtures + kickoff times             |
+| `syncScores` | `/scores` | 1–2               | a match is past kickoff and still unsettled       |
+| `syncOdds`   | `/odds`   | markets × regions | due, and estimated credits stay above the reserve |
 
 A credit **reserve** protects settlement budget, `ODDS_*_INTERVAL_MS` throttles cap call frequency,
 and every paid call records `x-requests-remaining` into `api_usage` (see `GET /admin/usage`). Set
