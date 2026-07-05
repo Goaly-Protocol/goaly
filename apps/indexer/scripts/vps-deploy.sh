@@ -39,4 +39,9 @@ curl -sS -m 6 -o /dev/null -w "local http: %{http_code}\n" http://127.0.0.1:4206
 echo "===== recent logs ====="
 pm2 logs goaly-indexer --lines 40 --nostream 2>/dev/null || true
 
+echo "===== nginx: how is indexer.goaly.fun routed? (read-only) ====="
+sudo nginx -T 2>/dev/null | grep -nE "server_name|proxy_pass|listen |root " | grep -iE "indexer.goaly|42069|4200|proxy_pass|server_name .*goaly|listen .*443" | head -40 || echo "(no sudo / nothing)"
+echo "----- files mentioning indexer.goaly.fun -----"
+sudo grep -rl "indexer.goaly.fun" /etc/nginx/ 2>/dev/null || echo "(none / no sudo)"
+
 echo "===== done ====="
