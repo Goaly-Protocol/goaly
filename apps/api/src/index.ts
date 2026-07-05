@@ -13,6 +13,7 @@ import { createDb } from './db/client';
 import { matches, oddsCache } from './db/schema';
 import { loadEnv } from './env';
 import { CrestService } from './services/crest.service';
+import { createFaucet } from './services/faucet';
 import { closingWinningOddsBps, parseH2hOdds, winningOddsBps } from './lib/odds';
 import { PredictionService } from './services/prediction.service';
 import { SyncService } from './services/sync.service';
@@ -89,7 +90,11 @@ const yieldAgent = new YieldAgentService({
 
 // Club crests (national teams use flags directly); resolved in the background + cached.
 const crests = new CrestService(db);
-const app = createApp({ db, env, sync, predictions, yieldAgent, crests });
+
+// Gas faucet — drips a little ETH to fresh embedded accounts (disabled unless FAUCET_PK is set).
+const faucet = createFaucet({ db, env });
+
+const app = createApp({ db, env, sync, predictions, yieldAgent, crests, faucet });
 
 // Index on-chain bets (Predicted) into the DB so a wallet's bets always show, even if the
 // client's off-chain record POST failed. The chain is the source of truth.

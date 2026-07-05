@@ -15,6 +15,17 @@ const schema = z.object({
   /** Oracle private key for on-chain market settlement (server-side, ORACLE_ROLE). */
   ORACLE_PK: z.string().optional(),
 
+  // Gas faucet — drips a little ETH to a freshly-created embedded account so the user can transact
+  // (approve/deposit) without first funding gas themselves.
+  /** Private key of the funded faucet wallet. When absent the faucet is DISABLED. */
+  FAUCET_PK: z.string().optional(),
+  /** ETH sent per drip. */
+  FAUCET_DRIP_ETH: z.string().default('0.0003'),
+  /** Skip the drip if the account already holds ≥ this much ETH. */
+  FAUCET_MIN_BALANCE_ETH: z.string().default('0.0002'),
+  /** Max drips per UTC day (anti-drain cap). */
+  FAUCET_DAILY_CAP: z.coerce.number().int().default(300),
+
   /** OpenAI key — enables the yield agent's LLM reasoning layer. Optional. */
   OPENAI_KEY: z.string().optional(),
 

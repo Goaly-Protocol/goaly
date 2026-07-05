@@ -22,6 +22,7 @@ import {
   winningOddsBps,
 } from './lib/odds';
 import type { CrestService } from './services/crest.service';
+import { createFaucet, type Faucet } from './services/faucet';
 import { fetchLeaderboard, fetchMarkets } from './services/indexer-client';
 import { StandingsService } from './services/standings.service';
 import type { YieldAgentService } from './services/yield-agent.service';
@@ -40,6 +41,8 @@ export interface AppDeps {
   yieldAgent?: YieldAgentService;
   /** Optional — resolves club crests (national teams use flags directly). */
   crests?: CrestService;
+  /** Optional — gas faucet; defaults to one built from `env` (disabled unless FAUCET_PK is set). */
+  faucet?: Faucet;
   /** Optional clock override (tests); defaults to the wall clock. */
   now?: () => number;
 }
@@ -69,6 +72,10 @@ const termsBody = z.object({
   address: z.string().regex(/^0x[0-9a-f]{40}$/i, 'address must be a 20-byte hex'),
   version: z.string().min(1),
   signature: z.string().regex(/^0x[0-9a-f]+$/i, 'signature must be hex'),
+});
+
+const faucetBody = z.object({
+  address: z.string().regex(/^0x[0-9a-f]{40}$/i, 'address must be a 20-byte hex'),
 });
 
 /** National-team meta (name, FIFA code, flag), else a club crest from the cache, else null. */
@@ -120,6 +127,7 @@ export function createApp(deps: AppDeps): Hono {
   const standings = deps.standings ?? new StandingsService();
   const yieldAgent = deps.yieldAgent;
   const crests = deps.crests;
+  const faucet = deps.faucet ?? createFaucet({ db, env: deps.env });
   const now = deps.now ?? (() => Date.now());
   const app = new Hono();
 
@@ -178,6 +186,7 @@ export function createApp(deps: AppDeps): Hono {
         '/predictions',
         '/leaderboard',
         '/markets',
+        '/faucet/gas',
         '/health',
       ],
     }),
@@ -368,6 +377,14 @@ export function createApp(deps: AppDeps): Hono {
       .where(eq(termsAcceptances.address, address))
       .all();
     return c.json({ acceptances });
+  });
+
+  // Drip a little gas to a freshly-created embedded account so it can pay for its first tx.
+  // Guardrailed (disabled/idempotent/daily-cap/already-funded) — always returns 200 with the outcome.
+  app.post('/faucet/gas', async (c) => {
+    const body = faucetBody.parse(await c.req.json());
+    const result = await faucet.dripGas(body.address.toLowerCase());
+    return c.json(result);
   });
 
   // ── Admin: sync, oracle result, settlement, credit usage ──

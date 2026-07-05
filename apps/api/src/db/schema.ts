@@ -41,6 +41,14 @@ export const termsAcceptances = sqliteTable('terms_acceptances', {
   acceptedAt: integer('accepted_at').notNull(),
 });
 
+/** Gas faucet drips — one row per funded account. `address` (lowercased) is the idempotency key. */
+export const faucetDrips = sqliteTable('faucet_drips', {
+  address: text('address').primaryKey(), // lowercased 0x-address
+  txHash: text('tx_hash'),
+  amount: text('amount'), // wei string
+  drippedAt: integer('dripped_at'),
+});
+
 /** Odds snapshot cache (optional display data), keyed by match. */
 export const oddsCache = sqliteTable('odds_cache', {
   matchId: text('match_id').primaryKey(),
