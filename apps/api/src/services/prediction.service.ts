@@ -19,6 +19,12 @@ export interface PlacePredictionInput {
   matchId: string;
   pick: Pick;
   stake: bigint;
+  /**
+   * The on-chain predict transaction hash. Used as the row id so this client record and the
+   * on-chain `Predicted` event indexed by the bet-indexer converge on ONE row (a predict is one
+   * event per tx) instead of duplicating. Falls back to a random id for non-on-chain callers.
+   */
+  txHash?: string;
 }
 
 export interface SettlementSummary {
@@ -64,7 +70,8 @@ export class PredictionService {
       throw new HttpError(409, 'predictions are closed for this match');
     }
 
-    const id = randomUUID();
+    // Key on the predict tx hash so the client record + the on-chain-indexed row dedupe to one.
+    const id = input.txHash ? input.txHash.toLowerCase() : randomUUID();
     this.db
       .insert(predictions)
       .values({
@@ -76,6 +83,7 @@ export class PredictionService {
         stake: input.stake.toString(),
         createdAt: this.now(),
       })
+      .onConflictDoNothing()
       .run();
     return { id };
   }

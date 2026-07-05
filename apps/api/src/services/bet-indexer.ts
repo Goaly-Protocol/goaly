@@ -44,8 +44,10 @@ export function createBetIndexer(db: DB, rpcUrl: string) {
         if (!matchId) continue;
         const outcome = OUTCOMES[Number(log.args.outcome)] ?? 'HOME';
         db.insert(predictions)
+          // Same id the client's placePrediction uses (the predict tx hash) so the two paths
+          // converge on one row. A predict emits a single Predicted event per tx.
           .values({
-            id: `${log.transactionHash}-${log.logIndex}`,
+            id: String(log.transactionHash).toLowerCase(),
             userId: String(log.args.user),
             matchId,
             market: 'WINNER',
