@@ -12,6 +12,13 @@ bun install
 echo "===== start script on the VPS (must contain --schema) ====="
 grep '"start"' package.json || true
 
+echo "===== env present (names only) ====="
+if [ -f .env ]; then grep -oE '^[A-Z_]+=' .env | sort -u; else echo "(no .env)"; fi
+
+echo "===== diagnostic: run ponder start directly for 35s (clean error, no pm2 spam) ====="
+pm2 delete goaly-indexer >/dev/null 2>&1 || true
+timeout 35 bun run start 2>&1 | tail -45 || echo "(direct run exited or timed out)"
+
 echo "===== fresh (re)start goaly-indexer ====="
 # Delete + start fresh so pm2 always picks up the current package.json/args (a plain restart can
 # keep a crash-looped process on stale args). Ponder serves on 0.0.0.0:42069 (what nginx proxies to).
