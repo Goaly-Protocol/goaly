@@ -39,12 +39,13 @@ curl -sS -m 6 -o /dev/null -w "local http: %{http_code}\n" http://127.0.0.1:4206
 echo "===== recent logs ====="
 pm2 logs goaly-indexer --lines 40 --nostream 2>/dev/null || true
 
-echo "===== indexer.goaly.fun nginx block (what port does it expect?) ====="
-sudo grep -n -A18 "server_name indexer.goaly.fun" /etc/nginx/sites-available/default 2>/dev/null \
-  | grep -iE "server_name|proxy_pass|listen|location|root|ssl_certificate " | head -30 || echo "(no sudo / not found)"
+echo "===== raw indexer.goaly.fun nginx blocks (default file) ====="
+sudo awk 'NR>=108 && NR<=180' /etc/nginx/sites-available/default 2>/dev/null || echo "(no sudo)"
 
-echo "===== is Ponder actually listening on :42069? ====="
+echo "===== is Ponder listening on :42069 now? ====="
+sleep 5
 curl -s -o /dev/null -w "127.0.0.1:42069 -> %{http_code}\n" --max-time 5 http://127.0.0.1:42069/ || echo "42069 not responding"
-sudo ss -ltnp 2>/dev/null | grep -iE ":4206|:420|bun|node" | head
+curl -s -o /dev/null -w "127.0.0.1:42069/health -> %{http_code}\n" --max-time 5 http://127.0.0.1:42069/health || true
+sudo ss -ltnp 2>/dev/null | grep -E ":42069" || echo "(nothing on 42069)"
 
 echo "===== done ====="
