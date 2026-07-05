@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "ponder dev",
-    "start": "ponder start --schema goaly_markets",
+    "start": "ponder start --schema goaly_markets --hostname 127.0.0.1 --port 42069",
     "codegen": "ponder codegen",
     "build": "ponder codegen",
     "typecheck": "tsc --noEmit",
