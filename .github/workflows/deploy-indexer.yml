@@ -1,0 +1,39 @@
+name: Deploy Indexer to VPS
+
+# The VPS env (e.g. ~/goaly/apps/indexer/.env or the pm2 ecosystem env) must define:
+#   PONDER_RPC_URL_42161      — Arbitrum One RPC endpoint
+#   GOALY_MARKETS_ADDRESS     — GoalyMarkets proxy (defaults to 0xFAcaD2Cbc3b6320239389aD5c2F597DeE95f1fd3)
+#   GOALY_MARKETS_START_BLOCK — deploy block (defaults to 480301271)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/indexer/**'
+      - '.github/workflows/deploy-indexer.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts 2>/dev/null
+      - name: Rsync to VPS
+        run: |
+          rsync -az \
+            --exclude 'node_modules' --exclude '.git' --exclude '.ponder' \
+            --exclude '*.db' --exclude '*.db-*' \
+            --exclude '.env' --exclude '.env.*' \
+            -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
+            ./apps/indexer/ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/goaly/apps/indexer/"
+      - name: Install deps + restart indexer
+        run: |
+          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
+            "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
+            "bash -lc 'cd ~/goaly/apps/indexer && bun install && pm2 restart goaly-indexer --update-env'"

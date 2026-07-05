@@ -1,8 +1,8 @@
 import { createConfig } from 'ponder';
-import { GoalyVaultAbi } from './abis/GoalyVault';
+import { GoalyMarketsAbi } from './abis/GoalyMarkets';
 
-const vaultAddress = (process.env.GOALY_VAULT_ADDRESS ??
-  '0x0000000000000000000000000000000000000000') as `0x${string}`;
+const marketsAddress = (process.env.GOALY_MARKETS_ADDRESS ??
+  '0xFAcaD2Cbc3b6320239389aD5c2F597DeE95f1fd3') as `0x${string}`;
 
 export default createConfig({
   chains: {
@@ -12,11 +12,11 @@ export default createConfig({
     },
   },
   contracts: {
-    GoalyVault: {
-      abi: GoalyVaultAbi,
+    GoalyMarkets: {
+      abi: GoalyMarketsAbi,
       chain: 'arbitrum',
-      address: vaultAddress,
-      startBlock: Number(process.env.GOALY_VAULT_START_BLOCK ?? 0),
+      address: marketsAddress,
+      startBlock: Number(process.env.GOALY_MARKETS_START_BLOCK ?? 480301271),
     },
   },
 });
