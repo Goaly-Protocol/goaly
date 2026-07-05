@@ -1,4 +1,4 @@
-# Goaly ⚽
+# Goaly
 
 > No-loss football prediction on Arbitrum. Stake USDT on match outcomes — your principal is
 > never at risk. Only the yield it earns funds the prizes.
