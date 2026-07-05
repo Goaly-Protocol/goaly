@@ -1,19 +1,8 @@
-// Generated from packages/contracts out/GoalyVault.sol/GoalyVault.json
-export const GoalyVaultAbi = [
+// Generated from packages/contracts/out/GoalyMarkets.sol/GoalyMarkets.json (.abi)
+export const GoalyMarketsAbi = [
   {
     type: 'constructor',
-    inputs: [
-      {
-        name: '_asset',
-        type: 'address',
-        internalType: 'contract IERC20',
-      },
-      {
-        name: '_yieldVault',
-        type: 'address',
-        internalType: 'contract IERC4626',
-      },
-    ],
+    inputs: [],
     stateMutability: 'nonpayable',
   },
   {
@@ -31,7 +20,7 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'function',
-    name: 'MANAGER_ROLE',
+    name: 'GUARDIAN_ROLE',
     inputs: [],
     outputs: [
       {
@@ -44,132 +33,83 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'function',
-    name: 'accruedYield',
+    name: 'ORACLE_ROLE',
     inputs: [],
     outputs: [
       {
         name: '',
-        type: 'uint256',
-        internalType: 'uint256',
+        type: 'bytes32',
+        internalType: 'bytes32',
       },
     ],
     stateMutability: 'view',
   },
   {
     type: 'function',
-    name: 'allowance',
-    inputs: [
-      {
-        name: 'owner',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'spender',
-        type: 'address',
-        internalType: 'address',
-      },
-    ],
+    name: 'UPGRADE_INTERFACE_VERSION',
+    inputs: [],
     outputs: [
       {
         name: '',
-        type: 'uint256',
-        internalType: 'uint256',
+        type: 'string',
+        internalType: 'string',
       },
     ],
     stateMutability: 'view',
   },
   {
     type: 'function',
-    name: 'approve',
+    name: 'claim',
     inputs: [
       {
-        name: 'spender',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'value',
-        type: 'uint256',
-        internalType: 'uint256',
+        name: 'marketId',
+        type: 'bytes32',
+        internalType: 'bytes32',
       },
     ],
     outputs: [
       {
-        name: '',
-        type: 'bool',
-        internalType: 'bool',
+        name: 'stakeReturned',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+      {
+        name: 'prize',
+        type: 'uint256',
+        internalType: 'uint256',
       },
     ],
     stateMutability: 'nonpayable',
   },
   {
     type: 'function',
-    name: 'asset',
-    inputs: [],
-    outputs: [
-      {
-        name: '',
-        type: 'address',
-        internalType: 'contract IERC20',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'balanceOf',
+    name: 'createMarket',
     inputs: [
       {
-        name: 'account',
-        type: 'address',
-        internalType: 'address',
+        name: 'marketId',
+        type: 'bytes32',
+        internalType: 'bytes32',
       },
-    ],
-    outputs: [
       {
-        name: '',
-        type: 'uint256',
-        internalType: 'uint256',
+        name: 'closeTime',
+        type: 'uint64',
+        internalType: 'uint64',
       },
     ],
-    stateMutability: 'view',
+    outputs: [],
+    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
-    name: 'decimals',
-    inputs: [],
-    outputs: [
-      {
-        name: '',
-        type: 'uint8',
-        internalType: 'uint8',
-      },
-    ],
-    stateMutability: 'pure',
-  },
-  {
-    type: 'function',
-    name: 'deposit',
+    name: 'fundReserve',
     inputs: [
       {
-        name: 'assets',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'receiver',
-        type: 'address',
-        internalType: 'address',
-      },
-    ],
-    outputs: [
-      {
-        name: '',
+        name: 'amount',
         type: 'uint256',
         internalType: 'uint256',
       },
     ],
+    outputs: [],
     stateMutability: 'nonpayable',
   },
   {
@@ -212,16 +152,10 @@ export const GoalyVaultAbi = [
   {
     type: 'function',
     name: 'harvestYield',
-    inputs: [
-      {
-        name: 'to',
-        type: 'address',
-        internalType: 'address',
-      },
-    ],
+    inputs: [],
     outputs: [
       {
-        name: 'amount',
+        name: 'harvested',
         type: 'uint256',
         internalType: 'uint256',
       },
@@ -254,12 +188,37 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'function',
-    name: 'migrateYieldVault',
+    name: 'initialize',
     inputs: [
       {
-        name: 'newYieldVault',
+        name: 'asset_',
+        type: 'address',
+        internalType: 'contract IERC20',
+      },
+      {
+        name: 'vault_',
         type: 'address',
         internalType: 'contract IERC4626',
+      },
+      {
+        name: 'governance',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: 'oracle',
+        type: 'address',
+        internalType: 'address',
+      },
+      {
+        name: 'feeBps_',
+        type: 'uint16',
+        internalType: 'uint16',
+      },
+      {
+        name: 'boostBps_',
+        type: 'uint16',
+        internalType: 'uint16',
       },
     ],
     outputs: [],
@@ -267,13 +226,64 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'function',
-    name: 'name',
+    name: 'isSolvent',
     inputs: [],
     outputs: [
       {
         name: '',
-        type: 'string',
-        internalType: 'string',
+        type: 'bool',
+        internalType: 'bool',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'markets',
+    inputs: [
+      {
+        name: 'marketId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'tuple',
+        internalType: 'struct GoalyMarkets.Market',
+        components: [
+          {
+            name: 'closeTime',
+            type: 'uint64',
+            internalType: 'uint64',
+          },
+          {
+            name: 'status',
+            type: 'uint8',
+            internalType: 'enum GoalyMarkets.Status',
+          },
+          {
+            name: 'result',
+            type: 'uint8',
+            internalType: 'enum GoalyMarkets.Outcome',
+          },
+          {
+            name: 'totalStake',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
+          {
+            name: 'winningStake',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
+          {
+            name: 'prize',
+            type: 'uint256',
+            internalType: 'uint256',
+          },
+        ],
       },
     ],
     stateMutability: 'view',
@@ -300,6 +310,66 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'function',
+    name: 'predict',
+    inputs: [
+      {
+        name: 'marketId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: 'outcome',
+        type: 'uint8',
+        internalType: 'enum GoalyMarkets.Outcome',
+      },
+      {
+        name: 'amount',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'prizeOf',
+    inputs: [
+      {
+        name: 'marketId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: 'user',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'proxiableUUID',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'renounceRole',
     inputs: [
       {
@@ -318,6 +388,19 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'function',
+    name: 'reserve',
+    inputs: [],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
     name: 'revokeRole',
     inputs: [
       {
@@ -333,6 +416,53 @@ export const GoalyVaultAbi = [
     ],
     outputs: [],
     stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'settleMarket',
+    inputs: [
+      {
+        name: 'marketId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: 'result',
+        type: 'uint8',
+        internalType: 'enum GoalyMarkets.Outcome',
+      },
+      {
+        name: 'winningOddsBps',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
+  {
+    type: 'function',
+    name: 'stakeOf',
+    inputs: [
+      {
+        name: 'marketId',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+      {
+        name: 'user',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+    outputs: [
+      {
+        name: '',
+        type: 'uint256',
+        internalType: 'uint256',
+      },
+    ],
+    stateMutability: 'view',
   },
   {
     type: 'function',
@@ -355,20 +485,7 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'function',
-    name: 'symbol',
-    inputs: [],
-    outputs: [
-      {
-        name: '',
-        type: 'string',
-        internalType: 'string',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'totalAssets',
+    name: 'totalStaked',
     inputs: [],
     outputs: [
       {
@@ -378,72 +495,6 @@ export const GoalyVaultAbi = [
       },
     ],
     stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'totalSupply',
-    inputs: [],
-    outputs: [
-      {
-        name: '',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-    ],
-    stateMutability: 'view',
-  },
-  {
-    type: 'function',
-    name: 'transfer',
-    inputs: [
-      {
-        name: 'to',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'value',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-    ],
-    outputs: [
-      {
-        name: '',
-        type: 'bool',
-        internalType: 'bool',
-      },
-    ],
-    stateMutability: 'nonpayable',
-  },
-  {
-    type: 'function',
-    name: 'transferFrom',
-    inputs: [
-      {
-        name: 'from',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'to',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'value',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-    ],
-    outputs: [
-      {
-        name: '',
-        type: 'bool',
-        internalType: 'bool',
-      },
-    ],
-    stateMutability: 'nonpayable',
   },
   {
     type: 'function',
@@ -454,31 +505,25 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'function',
-    name: 'withdraw',
+    name: 'upgradeToAndCall',
     inputs: [
       {
-        name: 'assets',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'receiver',
+        name: 'newImplementation',
         type: 'address',
         internalType: 'address',
       },
-    ],
-    outputs: [
       {
-        name: '',
-        type: 'uint256',
-        internalType: 'uint256',
+        name: 'data',
+        type: 'bytes',
+        internalType: 'bytes',
       },
     ],
-    stateMutability: 'nonpayable',
+    outputs: [],
+    stateMutability: 'payable',
   },
   {
     type: 'function',
-    name: 'yieldVault',
+    name: 'vault',
     inputs: [],
     outputs: [
       {
@@ -491,22 +536,28 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'event',
-    name: 'Approval',
+    name: 'Claimed',
     inputs: [
       {
-        name: 'owner',
+        name: 'marketId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'user',
         type: 'address',
         indexed: true,
         internalType: 'address',
       },
       {
-        name: 'spender',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
+        name: 'stakeReturned',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
       },
       {
-        name: 'value',
+        name: 'prize',
         type: 'uint256',
         indexed: false,
         internalType: 'uint256',
@@ -516,16 +567,60 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'event',
-    name: 'Deposited',
+    name: 'Initialized',
     inputs: [
       {
-        name: 'receiver',
-        type: 'address',
+        name: 'version',
+        type: 'uint64',
+        indexed: false,
+        internalType: 'uint64',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'MarketCreated',
+    inputs: [
+      {
+        name: 'marketId',
+        type: 'bytes32',
         indexed: true,
-        internalType: 'address',
+        internalType: 'bytes32',
       },
       {
-        name: 'assets',
+        name: 'closeTime',
+        type: 'uint64',
+        indexed: false,
+        internalType: 'uint64',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'MarketSettled',
+    inputs: [
+      {
+        name: 'marketId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'result',
+        type: 'uint8',
+        indexed: false,
+        internalType: 'enum GoalyMarkets.Outcome',
+      },
+      {
+        name: 'winningStake',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+      {
+        name: 'prize',
         type: 'uint256',
         indexed: false,
         internalType: 'uint256',
@@ -542,6 +637,62 @@ export const GoalyVaultAbi = [
         type: 'address',
         indexed: false,
         internalType: 'address',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'Predicted',
+    inputs: [
+      {
+        name: 'marketId',
+        type: 'bytes32',
+        indexed: true,
+        internalType: 'bytes32',
+      },
+      {
+        name: 'user',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'outcome',
+        type: 'uint8',
+        indexed: false,
+        internalType: 'enum GoalyMarkets.Outcome',
+      },
+      {
+        name: 'stake',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: 'event',
+    name: 'ReserveFunded',
+    inputs: [
+      {
+        name: 'from',
+        type: 'address',
+        indexed: true,
+        internalType: 'address',
+      },
+      {
+        name: 'amount',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
+      },
+      {
+        name: 'reserve',
+        type: 'uint256',
+        indexed: false,
+        internalType: 'uint256',
       },
     ],
     anonymous: false,
@@ -623,31 +774,6 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'event',
-    name: 'Transfer',
-    inputs: [
-      {
-        name: 'from',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-      {
-        name: 'to',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-      {
-        name: 'value',
-        type: 'uint256',
-        indexed: false,
-        internalType: 'uint256',
-      },
-    ],
-    anonymous: false,
-  },
-  {
-    type: 'event',
     name: 'Unpaused',
     inputs: [
       {
@@ -661,25 +787,13 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'event',
-    name: 'Withdrawn',
+    name: 'Upgraded',
     inputs: [
       {
-        name: 'owner',
+        name: 'implementation',
         type: 'address',
         indexed: true,
         internalType: 'address',
-      },
-      {
-        name: 'receiver',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-      {
-        name: 'assets',
-        type: 'uint256',
-        indexed: false,
-        internalType: 'uint256',
       },
     ],
     anonymous: false,
@@ -689,38 +803,13 @@ export const GoalyVaultAbi = [
     name: 'YieldHarvested',
     inputs: [
       {
-        name: 'to',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-      {
         name: 'amount',
         type: 'uint256',
         indexed: false,
         internalType: 'uint256',
       },
-    ],
-    anonymous: false,
-  },
-  {
-    type: 'event',
-    name: 'YieldVaultMigrated',
-    inputs: [
       {
-        name: 'from',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-      {
-        name: 'to',
-        type: 'address',
-        indexed: true,
-        internalType: 'address',
-      },
-      {
-        name: 'assets',
+        name: 'reserve',
         type: 'uint256',
         indexed: false,
         internalType: 'uint256',
@@ -751,57 +840,31 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'error',
+    name: 'AddressEmptyCode',
+    inputs: [
+      {
+        name: 'target',
+        type: 'address',
+        internalType: 'address',
+      },
+    ],
+  },
+  {
+    type: 'error',
+    name: 'AlreadyClaimed',
+    inputs: [],
+  },
+  {
+    type: 'error',
     name: 'AssetMismatch',
     inputs: [],
   },
   {
     type: 'error',
-    name: 'ERC20InsufficientAllowance',
+    name: 'ERC1967InvalidImplementation',
     inputs: [
       {
-        name: 'spender',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'allowance',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'needed',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-    ],
-  },
-  {
-    type: 'error',
-    name: 'ERC20InsufficientBalance',
-    inputs: [
-      {
-        name: 'sender',
-        type: 'address',
-        internalType: 'address',
-      },
-      {
-        name: 'balance',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-      {
-        name: 'needed',
-        type: 'uint256',
-        internalType: 'uint256',
-      },
-    ],
-  },
-  {
-    type: 'error',
-    name: 'ERC20InvalidApprover',
-    inputs: [
-      {
-        name: 'approver',
+        name: 'implementation',
         type: 'address',
         internalType: 'address',
       },
@@ -809,36 +872,8 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'error',
-    name: 'ERC20InvalidReceiver',
-    inputs: [
-      {
-        name: 'receiver',
-        type: 'address',
-        internalType: 'address',
-      },
-    ],
-  },
-  {
-    type: 'error',
-    name: 'ERC20InvalidSender',
-    inputs: [
-      {
-        name: 'sender',
-        type: 'address',
-        internalType: 'address',
-      },
-    ],
-  },
-  {
-    type: 'error',
-    name: 'ERC20InvalidSpender',
-    inputs: [
-      {
-        name: 'spender',
-        type: 'address',
-        internalType: 'address',
-      },
-    ],
+    name: 'ERC1967NonPayable',
+    inputs: [],
   },
   {
     type: 'error',
@@ -852,7 +887,52 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'error',
-    name: 'NoYield',
+    name: 'FailedCall',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidFee',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'InvalidInitialization',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'MarketClosed',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'MarketExists',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotInitializing',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotOpen',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NotSettled',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'NothingStaked',
+    inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'PickLocked',
     inputs: [],
   },
   {
@@ -873,8 +953,19 @@ export const GoalyVaultAbi = [
   },
   {
     type: 'error',
-    name: 'ZeroAddress',
+    name: 'UUPSUnauthorizedCallContext',
     inputs: [],
+  },
+  {
+    type: 'error',
+    name: 'UUPSUnsupportedProxiableUUID',
+    inputs: [
+      {
+        name: 'slot',
+        type: 'bytes32',
+        internalType: 'bytes32',
+      },
+    ],
   },
   {
     type: 'error',
