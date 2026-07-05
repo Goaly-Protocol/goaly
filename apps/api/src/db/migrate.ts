@@ -47,6 +47,14 @@ export function migrate(raw: Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_terms_address ON terms_acceptances (address);
 
+    CREATE TABLE IF NOT EXISTS faucet_drips (
+      address TEXT PRIMARY KEY,
+      tx_hash TEXT,
+      amount TEXT,
+      dripped_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_faucet_dripped_at ON faucet_drips (dripped_at);
+
     CREATE TABLE IF NOT EXISTS odds_cache (
       match_id TEXT PRIMARY KEY,
       market TEXT NOT NULL,
