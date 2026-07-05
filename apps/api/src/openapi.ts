@@ -40,6 +40,17 @@ const Match = {
   },
 } as const;
 
+const LeaderboardEntry = {
+  type: 'object',
+  properties: {
+    address: { type: 'string', description: 'Wallet address (lowercased hex)' },
+    predictions: { type: 'integer', description: 'On-chain predictions placed' },
+    totalStaked: { type: 'string', description: 'Total staked, base units' },
+    wins: { type: 'integer', description: 'Settled positions claimed' },
+    volume: { type: 'string', description: 'Total value transacted (staked + prizes), base units' },
+  },
+} as const;
+
 export const openApiDocument = {
   openapi: '3.1.0',
   info: {
@@ -110,6 +121,51 @@ export const openApiDocument = {
         },
       },
     },
+    '/leaderboard': {
+      get: {
+        summary: 'Top stakers, from the on-chain indexer (base-unit strings, counts as numbers)',
+        parameters: [
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', minimum: 1, maximum: 200, default: 50 },
+          },
+        ],
+        responses: {
+          '200': {
+            description:
+              'Leaderboard (empty array if the indexer is unreachable). Ordered by totalStaked desc.',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: { leaderboard: { type: 'array', items: LeaderboardEntry } },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    '/markets': {
+      get: {
+        summary: 'On-chain markets from the indexer (open + settled)',
+        parameters: [
+          {
+            name: 'limit',
+            in: 'query',
+            required: false,
+            schema: { type: 'integer', minimum: 1, maximum: 200, default: 100 },
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Markets (empty array if the indexer is unreachable).',
+          },
+        },
+      },
+    },
     '/admin/sync': {
       post: {
         summary: 'Run one sync tick (fixtures + odds + on-chain markets)',
@@ -166,5 +222,5 @@ export const openApiDocument = {
       },
     },
   },
-  components: { schemas: { Match, Pick } },
+  components: { schemas: { Match, Pick, LeaderboardEntry } },
 };

@@ -22,6 +22,7 @@ import {
   winningOddsBps,
 } from './lib/odds';
 import type { CrestService } from './services/crest.service';
+import { fetchLeaderboard, fetchMarkets } from './services/indexer-client';
 import { StandingsService } from './services/standings.service';
 import type { YieldAgentService } from './services/yield-agent.service';
 import { openApiDocument } from './openapi';
@@ -169,9 +170,25 @@ export function createApp(deps: AppDeps): Hono {
       description:
         'No-loss football predictions on Arbitrum — matches, live odds, standings, and an autonomous WDK yield agent.',
       docs: '/docs',
-      endpoints: ['/matches', '/standings', '/bracket', '/agent', '/predictions', '/health'],
+      endpoints: [
+        '/matches',
+        '/standings',
+        '/bracket',
+        '/agent',
+        '/predictions',
+        '/leaderboard',
+        '/markets',
+        '/health',
+      ],
     }),
   );
+
+  /** limit query param, clamped to [1, 200] with a default. */
+  const parseLimit = (raw: string | undefined, fallback: number) => {
+    const n = Number(raw ?? fallback);
+    if (!Number.isFinite(n)) return fallback;
+    return Math.min(Math.max(Math.trunc(n), 1), 200);
+  };
 
   // ── API docs (Scalar) ──
   app.get('/openapi.json', (c) => c.json(openApiDocument));
@@ -297,6 +314,32 @@ export function createApp(deps: AppDeps): Hono {
       return { ...prediction, match: match ? withTeamMeta(match, crests) : null };
     });
     return c.json({ predictions: enriched });
+  });
+
+  // ── Leaderboard + markets (served from the Ponder indexer) ──
+  // Top stakers by on-chain volume. Best-effort: if the indexer is unreachable we return an
+  // empty leaderboard (200) rather than erroring, so the UI degrades gracefully.
+  app.get('/leaderboard', async (c) => {
+    const limit = parseLimit(c.req.query('limit'), 50);
+    try {
+      const leaderboard = await fetchLeaderboard(deps.env.INDEXER_URL, limit);
+      return c.json({ leaderboard });
+    } catch (err) {
+      console.error('[leaderboard] indexer unreachable', err);
+      return c.json({ leaderboard: [] });
+    }
+  });
+
+  // On-chain markets (open + settled) from the indexer. Same graceful-empty fallback.
+  app.get('/markets', async (c) => {
+    const limit = parseLimit(c.req.query('limit'), 100);
+    try {
+      const markets = await fetchMarkets(deps.env.INDEXER_URL, limit);
+      return c.json({ markets });
+    } catch (err) {
+      console.error('[markets] indexer unreachable', err);
+      return c.json({ markets: [] });
+    }
   });
 
   // Record a signed Terms & Conditions acceptance (EIP-712 signature is the proof). Idempotent per
