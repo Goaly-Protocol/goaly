@@ -42,14 +42,14 @@ their principal.
 
 A layered protocol, all deployed and Arbiscan-verified on **Arbitrum One**:
 
-| Contract | Address | Role |
-| --- | --- | --- |
-| **GoalyMarkets** | [`0xFAcaD2Cbc3b6320239389aD5c2F597DeE95f1fd3`](https://arbiscan.io/address/0xFAcaD2Cbc3b6320239389aD5c2F597DeE95f1fd3) | Prediction layer — `predict` / `claim`; routes stakes to the vault, pays yield-funded prizes |
-| **GoalyVault** | [`0xFe424b5b85C742C15CCB09d62873bE72577CD7Ef`](https://arbiscan.io/address/0xFe424b5b85C742C15CCB09d62873bE72577CD7Ef) | ERC-4626 (UUPS) vault — pools principal, allocates across strategies, keeps a liquidity buffer |
-| **MorphoStrategy** | [`0x6951adCCd2106Bf364D62A1CC328070FC49609eA`](https://arbiscan.io/address/0x6951adCCd2106Bf364D62A1CC328070FC49609eA) | Same-asset adapter — supplies USDT0 into a Morpho USDT0 vault |
-| **MorphoSwapStrategy** | [`0xD12c112DA7D19266c5cBB9A9bde4Ee9e77D5393D`](https://arbiscan.io/address/0xD12c112DA7D19266c5cBB9A9bde4Ee9e77D5393D) | Cross-asset adapter — swaps USDT0 ↔ USDC into Morpho USDC vaults |
-| **GoalySettlement** | [`0xC03BB9526D6F0308d8Ba0831e85f93db3E45e201`](https://arbiscan.io/address/0xC03BB9526D6F0308d8Ba0831e85f93db3E45e201) | Optimistic settlement oracle — bonded propose → dispute window → finalize |
-| **ReserveManager** | [`0xCe34457F70733191126726c1D1EeEb52Bcd20051`](https://arbiscan.io/address/0xCe34457F70733191126726c1D1EeEb52Bcd20051) | Bridges surplus only (never principal) cross-chain as USDC via Circle CCTP |
+| Contract               | Address                                                                                                                | Role                                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **GoalyMarkets**       | [`0xFAcaD2Cbc3b6320239389aD5c2F597DeE95f1fd3`](https://arbiscan.io/address/0xFAcaD2Cbc3b6320239389aD5c2F597DeE95f1fd3) | Prediction layer — `predict` / `claim`; routes stakes to the vault, pays yield-funded prizes   |
+| **GoalyVault**         | [`0xFe424b5b85C742C15CCB09d62873bE72577CD7Ef`](https://arbiscan.io/address/0xFe424b5b85C742C15CCB09d62873bE72577CD7Ef) | ERC-4626 (UUPS) vault — pools principal, allocates across strategies, keeps a liquidity buffer |
+| **MorphoStrategy**     | [`0x6951adCCd2106Bf364D62A1CC328070FC49609eA`](https://arbiscan.io/address/0x6951adCCd2106Bf364D62A1CC328070FC49609eA) | Same-asset adapter — supplies USDT0 into a Morpho USDT0 vault                                  |
+| **MorphoSwapStrategy** | [`0xD12c112DA7D19266c5cBB9A9bde4Ee9e77D5393D`](https://arbiscan.io/address/0xD12c112DA7D19266c5cBB9A9bde4Ee9e77D5393D) | Cross-asset adapter — swaps USDT0 ↔ USDC into Morpho USDC vaults                               |
+| **GoalySettlement**    | [`0xC03BB9526D6F0308d8Ba0831e85f93db3E45e201`](https://arbiscan.io/address/0xC03BB9526D6F0308d8Ba0831e85f93db3E45e201) | Optimistic settlement oracle — bonded propose → dispute window → finalize                      |
+| **ReserveManager**     | [`0xCe34457F70733191126726c1D1EeEb52Bcd20051`](https://arbiscan.io/address/0xCe34457F70733191126726c1D1EeEb52Bcd20051) | Bridges surplus only (never principal) cross-chain as USDC via Circle CCTP                     |
 
 Players always stake and withdraw USDT; internally the vault's yield can be earned in USDT0 or USDC.
 Contract source lives in its own repo, [Goaly-Protocol/contracts](https://github.com/Goaly-Protocol/contracts).

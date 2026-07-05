@@ -13,7 +13,7 @@ public Goaly Odds feed, The Odds API, and a deterministic mock — and picks the
 - **The Odds API adapter** — credit-aware: parses quota headers and rotates through a ring of API keys,
   falling back to the next key on `401` / `429` so free keys stack for more monthly headroom.
 - **Goaly Odds feed** — a free, no-auth public board; derives fair 1X2 decimal odds from Asian Handicap
-  + Over/Under lines with a Poisson goals model, and keeps live matches bettable within a time window.
+  - Over/Under lines with a Poisson goals model, and keeps live matches bettable within a time window.
 - **Mock** — a zero-credit in-memory provider for local dev and tests.
 - **Auto-select** — `createSportsProvider` chooses the feed, The Odds API, or the mock from config.
 
