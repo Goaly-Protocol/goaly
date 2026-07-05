@@ -38,6 +38,15 @@ export function migrate(raw: Database): void {
     CREATE INDEX IF NOT EXISTS idx_predictions_match ON predictions (match_id);
     CREATE INDEX IF NOT EXISTS idx_predictions_user ON predictions (user_id);
 
+    CREATE TABLE IF NOT EXISTS terms_acceptances (
+      id TEXT PRIMARY KEY,
+      address TEXT NOT NULL,
+      version TEXT NOT NULL,
+      signature TEXT NOT NULL,
+      accepted_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_terms_address ON terms_acceptances (address);
+
     CREATE TABLE IF NOT EXISTS odds_cache (
       match_id TEXT PRIMARY KEY,
       market TEXT NOT NULL,
