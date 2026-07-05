@@ -32,8 +32,8 @@ jobs:
             --exclude '.env' --exclude '.env.*' \
             -e "ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no" \
             ./apps/indexer/ "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:~/goaly/apps/indexer/"
-      - name: Install deps + restart indexer
+      - name: Install deps + (re)start indexer
         run: |
           ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
             "${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}" \
-            "bash -lc 'cd ~/goaly/apps/indexer && bun install && pm2 restart goaly-indexer --update-env'"
+            "bash -lc 'cd ~/goaly/apps/indexer && bun install && { pm2 restart goaly-indexer --update-env || pm2 start bun --name goaly-indexer -- run start; } && pm2 save'"
