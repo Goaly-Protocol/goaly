@@ -215,6 +215,16 @@ export const openApiDocument = {
         },
       },
     },
+    '/admin/reconcile': {
+      post: {
+        summary: 'Run one settlement reconcile pass (self-healing settle retry net)',
+        responses: {
+          '200': {
+            description: 'Reconcile summary (onchainSettled, offchainSettled, skipped, errors)',
+          },
+        },
+      },
+    },
     '/admin/usage': {
       get: {
         summary: 'Odds API credit usage + estimated remaining',
