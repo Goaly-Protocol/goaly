@@ -269,6 +269,18 @@ export function createApp(deps: AppDeps): Hono {
     return c.json({ matches: rows.map((row) => withMatchDetail(db, row, crests)) });
   });
 
+  // All matches (incl. finished) with team meta — lets admin tooling map a marketId → its fixture
+  // (the on-chain marketId = keccak(matchId) isn't reversible, so the fixture list is the lookup).
+  app.get('/matches/all', (c) => {
+    const rows = db
+      .select()
+      .from(matches)
+      .orderBy(desc(matches.kickoff))
+      .all()
+      .filter((row) => isRealMatch(row.homeTeam, row.awayTeam));
+    return c.json({ matches: rows.map((row) => withTeamMeta(row, crests)) });
+  });
+
   app.get('/matches/:id', (c) => {
     const row = db
       .select()
