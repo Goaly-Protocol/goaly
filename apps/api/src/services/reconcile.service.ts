@@ -5,7 +5,7 @@ import {
   marketIdFor,
   readMarketStatus,
 } from '@goaly/plugin-onchain';
-import { and, eq, gte, inArray, isNotNull, or } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { Hex, PublicClient } from 'viem';
 import type { DB } from '../db/client';
 import { matches, predictions } from '../db/schema';
@@ -78,22 +78,20 @@ export function createReconciler(deps: ReconcileDeps): Reconciler {
       errors: 0,
     };
 
-    // Reconcile a match if it EITHER carries stakes (predictions) OR finished recently. Staked
-    // matches are where funds can be stuck; recent matches catch no-stake markets the one-shot
-    // settle missed (e.g. the oracle was out of gas at kickoff). Both sets are small, so we avoid
-    // an on-chain read per historical fixture (there can be hundreds) that would time out the pass.
-    const RECENT_WINDOW_S = 3 * 24 * 60 * 60; // 3 days
-    const recentCutoff = Math.floor(Date.now() / 1000) - RECENT_WINDOW_S;
+    // Only matches that carry stakes (predictions) can have stuck *funds*. Restricting to those keeps
+    // each pass to a handful of on-chain reads — the full FINISHED set can be hundreds (the whole
+    // feed can share a recent kickoff), which would make the pass and the manual /admin/reconcile
+    // time out. No-stake markets that never settled have no funds at risk; the dashboard flags them.
     const betMatchIds = db
       .selectDistinct({ matchId: predictions.matchId })
       .from(predictions)
       .all()
       .map((r) => r.matchId);
 
-    const recentOrStaked =
-      betMatchIds.length > 0
-        ? or(gte(matches.kickoff, recentCutoff), inArray(matches.id, betMatchIds))
-        : gte(matches.kickoff, recentCutoff);
+    if (betMatchIds.length === 0) {
+      console.log('[reconcile] onchain=0 offchain=0 skipped=0 errors=0 (no staked matches)');
+      return summary;
+    }
 
     const finished = db
       .select()
@@ -103,7 +101,7 @@ export function createReconciler(deps: ReconcileDeps): Reconciler {
           eq(matches.status, 'FINISHED'),
           isNotNull(matches.homeScore),
           isNotNull(matches.awayScore),
-          recentOrStaked,
+          inArray(matches.id, betMatchIds),
         ),
       )
       .all();
