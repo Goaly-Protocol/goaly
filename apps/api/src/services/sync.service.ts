@@ -129,12 +129,18 @@ export class SyncService {
       .where(and(eq(matches.status, 'SCHEDULED'), lt(matches.kickoff, cutoff)))
       .all();
     if (pending.length === 0) return 0;
+    // Only settle matches that are actually due — i.e. kicked off more than the settle buffer ago
+    // (that is exactly the `pending` set). The `pending` check above merely decides whether to spend
+    // a fetch; without this per-match gate the loop would settle EVERY completed score in the feed,
+    // including still-live matches the feed briefly flags as completed. A mid-match draw score would
+    // then settle the market permanently before full time — the wrong (drawn) result freezes on-chain.
+    const pendingIds = new Set(pending.map((m) => m.id));
 
     const { data, quota } = await provider.listScores(env.ODDS_SPORT_KEY, { daysFrom: 3 });
     const ts = this.now();
     let updated = 0;
     for (const score of data) {
-      if (!score.completed) continue;
+      if (!score.completed || !pendingIds.has(score.matchId)) continue;
       db.update(matches)
         .set({
           status: 'FINISHED',
