@@ -198,6 +198,47 @@ describe('SyncService credit strategy', () => {
     expect(settled).toEqual([{ matchId: 'm1', result: 'HOME' }]);
   });
 
+  test('never settles a still-live match the feed flags completed — only due matches settle', async () => {
+    const { db } = createDb(':memory:');
+    const provider = new MockSportsProvider([
+      // Kicked off well over the settle buffer ago → genuinely finished, must settle.
+      {
+        id: 'done',
+        homeTeam: 'Argentina',
+        awayTeam: 'Brazil',
+        kickoff: 992_800,
+        round: 'GROUP',
+        status: 'SCHEDULED',
+      },
+      // Just kicked off (< buffer) → still live even though the feed reports it completed at a draw.
+      {
+        id: 'live',
+        homeTeam: 'France',
+        awayTeam: 'Spain',
+        kickoff: 999_940,
+        round: 'GROUP',
+        status: 'SCHEDULED',
+      },
+    ]);
+    provider.setResult('done', { homeScore: 2, awayScore: 1 });
+    provider.setResult('live', { homeScore: 0, awayScore: 0 });
+    const settled: Array<{ matchId: string; result: string }> = [];
+    const sync = new SyncService({
+      db,
+      provider,
+      env: env({ ODDS_SCORES_INTERVAL_MS: '0', ODDS_SETTLE_BUFFER_S: '3600' }),
+      now: () => 1_000_000_000,
+      settleOnchain: async (matchId, result) => {
+        settled.push({ matchId, result });
+      },
+    });
+    await sync.syncEvents();
+    // Only 'done' settles; the still-live 'live' is left SCHEDULED, unsettled — no premature draw.
+    expect(await sync.syncScores()).toBe(1);
+    expect(settled).toEqual([{ matchId: 'done', result: 'HOME' }]);
+    expect(db.select().from(matches).where(eq(matches.id, 'live')).get()?.status).toBe('SCHEDULED');
+  });
+
   test('opens an on-chain market once per new fixture', async () => {
     const { db } = createDb(':memory:');
     const provider = new MockSportsProvider([
