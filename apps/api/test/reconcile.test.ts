@@ -115,6 +115,9 @@ describe('settlement reconcile job', () => {
     const { db } = createDb(':memory:');
     seedFinishedMatch(db, 'bad');
     seedFinishedMatch(db, 'good');
+    // Both matches have a stake (so both are scanned). 'bad' is already settled off-chain, so its
+    // only work is the on-chain retry (which throws); 'good' still needs both layers.
+    seedPrediction(db, 'p-bad', 'bad', /* settled */ true);
     seedPrediction(db, 'p-good', 'good');
     const predictionService = new PredictionService(db, 250n, now);
 
