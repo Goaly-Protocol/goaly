@@ -16,6 +16,7 @@ import { CrestService } from './services/crest.service';
 import { createFaucet } from './services/faucet';
 import { closingWinningOddsBps, parseH2hOdds, winningOddsBps } from './lib/odds';
 import { PredictionService } from './services/prediction.service';
+import { createReconciler } from './services/reconcile.service';
 import { SyncService } from './services/sync.service';
 import { createBetIndexer } from './services/bet-indexer';
 import { YieldAgentService } from './services/yield-agent.service';
@@ -94,7 +95,16 @@ const crests = new CrestService(db);
 // Gas faucet — drips a little ETH to fresh embedded accounts (disabled unless FAUCET_PK is set).
 const faucet = createFaucet({ db, env });
 
-const app = createApp({ db, env, sync, predictions, yieldAgent, crests, faucet });
+// Settlement reconcile — self-healing retry net. Injects the same on-chain settle closure the sync
+// loop uses, so a market the one-shot settle missed (e.g. oracle out of gas) gets re-settled.
+const reconciler = createReconciler({
+  db,
+  env,
+  predictionService: predictions,
+  ...(settleOnchain ? { settleOnchain } : {}),
+});
+
+const app = createApp({ db, env, sync, predictions, yieldAgent, crests, faucet, reconciler });
 
 // Index on-chain bets (Predicted) into the DB so a wallet's bets always show, even if the
 // client's off-chain record POST failed. The chain is the source of truth.
@@ -106,6 +116,17 @@ indexBets()
 setInterval(() => {
   indexBets().catch((error) => console.error('[bets] index failed', error));
 }, BET_TICK_MS);
+
+// Settlement reconcile loop — re-settles markets that should be settled but aren't (the retry net
+// for the one-shot settle in sync). Safe with or without ORACLE_PK: without it, it only heals the
+// off-chain ledger. Mirrors the indexBets wiring: once shortly after startup, then on an interval.
+const RECONCILE_TICK_MS = 90 * 1000;
+setTimeout(() => {
+  reconciler.reconcile().catch((err) => console.error('[reconcile] failed', err));
+}, 15 * 1000);
+setInterval(() => {
+  reconciler.reconcile().catch((err) => console.error('[reconcile] failed', err));
+}, RECONCILE_TICK_MS);
 
 // Background sync — decoupled from user traffic so credits are spent on our schedule.
 const SYNC_TICK_MS = 5 * 60 * 1000;

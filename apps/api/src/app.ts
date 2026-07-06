@@ -1,4 +1,4 @@
-import { ARBITRUM, resolveOutcome } from '@goaly/core';
+import { ARBITRUM, type Outcome, resolveOutcome } from '@goaly/core';
 import { marketIdFor, settleMarket } from '@goaly/plugin-onchain';
 import { LIVE_MATCH_WINDOW_S } from '@goaly/plugin-odds';
 import { resolveTeam } from '@goaly/plugin-teams';
@@ -28,6 +28,7 @@ import { StandingsService } from './services/standings.service';
 import type { YieldAgentService } from './services/yield-agent.service';
 import { openApiDocument } from './openapi';
 import type { PredictionService } from './services/prediction.service';
+import { createReconciler, type Reconciler } from './services/reconcile.service';
 import type { SyncService } from './services/sync.service';
 
 export interface AppDeps {
@@ -43,6 +44,8 @@ export interface AppDeps {
   crests?: CrestService;
   /** Optional — gas faucet; defaults to one built from `env` (disabled unless FAUCET_PK is set). */
   faucet?: Faucet;
+  /** Optional — settlement reconcile job; defaults to one built from `env` (on-chain retry needs ORACLE_PK). */
+  reconciler?: Reconciler;
   /** Optional clock override (tests); defaults to the wall clock. */
   now?: () => number;
 }
@@ -134,6 +137,40 @@ export function createApp(deps: AppDeps): Hono {
   const faucet = deps.faucet ?? createFaucet({ db, env: deps.env });
   const now = deps.now ?? (() => Date.now());
   const app = new Hono();
+
+  // On-chain settle closure (present only when an oracle key is configured). Reused by the default
+  // reconciler so its `/admin/reconcile` pass can actually retry the on-chain settle from env.
+  type SettleOnchain = (matchId: string, result: Outcome) => Promise<void>;
+  const buildSettleOnchain = (): SettleOnchain | undefined => {
+    const oraclePk = deps.env.ORACLE_PK;
+    if (!oraclePk) return undefined;
+    const wallet = new KeyWallet(oraclePk as `0x${string}`, {
+      provider: deps.env.ARBITRUM_RPC_URL,
+    });
+    return async (matchId, result) => {
+      const row = db.select().from(matches).where(eq(matches.id, matchId)).get();
+      if (!row) throw new HttpError(404, 'match not found');
+      const oddsBps =
+        closingWinningOddsBps(row, result) ??
+        winningOddsBps(matchOdds(db, matchId, row.homeTeam, row.awayTeam), result);
+      await settleMarket(wallet, {
+        markets: ARBITRUM.goaly.markets as `0x${string}`,
+        marketId: marketIdFor(matchId),
+        result,
+        winningOddsBps: oddsBps,
+      });
+    };
+  };
+
+  const defaultSettleOnchain = buildSettleOnchain();
+  const reconciler =
+    deps.reconciler ??
+    createReconciler({
+      db,
+      env: deps.env,
+      predictionService,
+      ...(defaultSettleOnchain ? { settleOnchain: defaultSettleOnchain } : {}),
+    });
 
   // CORS: allow the web app. Any localhost port in dev, plus configured production origins.
   const allowedOrigins = (deps.env.CORS_ORIGINS ?? 'https://goaly.fun,https://app.goaly.fun')
@@ -443,6 +480,10 @@ export function createApp(deps: AppDeps): Hono {
     });
     return c.json({ matchId, marketId, result, winningOddsBps: oddsBps.toString(), txHash });
   });
+
+  // Run one settlement reconcile pass (the self-healing retry net) and return its summary. Handy
+  // for manual triggers; the background loop in index.ts runs this on its own cadence.
+  app.post('/admin/reconcile', async (c) => c.json(await reconciler.reconcile()));
 
   app.get('/admin/usage', (c) => {
     const rows = db.select().from(apiUsage).all();
