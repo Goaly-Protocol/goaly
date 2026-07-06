@@ -5,7 +5,7 @@ import {
   marketIdFor,
   readMarketStatus,
 } from '@goaly/plugin-onchain';
-import { and, eq, isNotNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull } from 'drizzle-orm';
 import type { Hex, PublicClient } from 'viem';
 import type { DB } from '../db/client';
 import { matches, predictions } from '../db/schema';
@@ -78,6 +78,21 @@ export function createReconciler(deps: ReconcileDeps): Reconciler {
       errors: 0,
     };
 
+    // Only matches that actually have stakes (predictions) can have stuck funds. Restricting to
+    // those keeps each pass to a handful of on-chain reads instead of one per historical fixture
+    // (there can be hundreds of FINISHED matches, which would make the pass — and the manual
+    // /admin/reconcile call — time out).
+    const betMatchIds = db
+      .selectDistinct({ matchId: predictions.matchId })
+      .from(predictions)
+      .all()
+      .map((r) => r.matchId);
+
+    if (betMatchIds.length === 0) {
+      console.log('[reconcile] onchain=0 offchain=0 skipped=0 errors=0 (no staked matches)');
+      return summary;
+    }
+
     const finished = db
       .select()
       .from(matches)
@@ -86,6 +101,7 @@ export function createReconciler(deps: ReconcileDeps): Reconciler {
           eq(matches.status, 'FINISHED'),
           isNotNull(matches.homeScore),
           isNotNull(matches.awayScore),
+          inArray(matches.id, betMatchIds),
         ),
       )
       .all();
