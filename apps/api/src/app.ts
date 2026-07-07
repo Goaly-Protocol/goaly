@@ -24,6 +24,8 @@ import {
 import type { CrestService } from './services/crest.service';
 import { createFaucet, type Faucet } from './services/faucet';
 import { fetchLeaderboard, fetchMarkets } from './services/indexer-client';
+import { messages } from './services/notification-messages';
+import type { NotificationService } from './services/notification.service';
 import { StandingsService } from './services/standings.service';
 import type { YieldAgentService } from './services/yield-agent.service';
 import { openApiDocument } from './openapi';
@@ -46,6 +48,8 @@ export interface AppDeps {
   faucet?: Faucet;
   /** Optional — settlement reconcile job; defaults to one built from `env` (on-chain retry needs ORACLE_PK). */
   reconciler?: Reconciler;
+  /** Optional — Web Push (VAPID) delivery; absent/disabled ⇒ the notification routes no-op gracefully. */
+  notifications?: NotificationService;
   /** Optional clock override (tests); defaults to the wall clock. */
   now?: () => number;
 }
@@ -84,6 +88,18 @@ const termsBody = z.object({
 const faucetBody = z.object({
   address: z.string().regex(/^0x[0-9a-f]{40}$/i, 'address must be a 20-byte hex'),
 });
+
+const subscribeBody = z.object({
+  userId: z.string().min(1),
+  subscription: z.object({
+    endpoint: z.string().min(1),
+    keys: z.object({ p256dh: z.string().min(1), auth: z.string().min(1) }),
+  }),
+});
+
+const unsubscribeBody = z.object({ endpoint: z.string().min(1) });
+
+const claimedBody = z.object({ userId: z.string().min(1), amount: z.string().min(1) });
 
 /** National-team meta (name, FIFA code, flag), else a club crest from the cache, else null. */
 function teamMetaFor(name: string, crests?: CrestService) {
@@ -135,6 +151,7 @@ export function createApp(deps: AppDeps): Hono {
   const yieldAgent = deps.yieldAgent;
   const crests = deps.crests;
   const faucet = deps.faucet ?? createFaucet({ db, env: deps.env });
+  const notifications = deps.notifications;
   const now = deps.now ?? (() => Date.now());
   const app = new Hono();
 
@@ -439,6 +456,34 @@ export function createApp(deps: AppDeps): Hono {
     const body = faucetBody.parse(await c.req.json());
     const result = await faucet.dripGas(body.address.toLowerCase());
     return c.json(result);
+  });
+
+  // ── Web Push notifications (VAPID) ──
+  // The public key the browser needs to subscribe. `null` when push is disabled (no VAPID keys).
+  app.get('/notifications/vapid-key', (c) => c.json({ key: notifications?.publicKey ?? null }));
+
+  // Register (or refresh) a browser push subscription for a user. First-time subscribers also get a
+  // welcome push. Gracefully reports disabled when no VAPID keys are configured.
+  app.post('/notifications/subscribe', async (c) => {
+    const body = subscribeBody.parse(await c.req.json());
+    if (!notifications || !notifications.enabled) return c.json({ ok: false, disabled: true });
+    const { created } = notifications.subscribe(body.userId, body.subscription);
+    if (created) notifications.notify(body.userId, messages.welcome());
+    return c.json({ ok: true });
+  });
+
+  // Remove a subscription (user disabled notifications / browser rotated the endpoint).
+  app.post('/notifications/unsubscribe', async (c) => {
+    const body = unsubscribeBody.parse(await c.req.json());
+    notifications?.unsubscribe(body.endpoint);
+    return c.json({ ok: true });
+  });
+
+  // Client-triggered after a claim tx confirms (the server can't observe the wallet's claim).
+  app.post('/notifications/claimed', async (c) => {
+    const body = claimedBody.parse(await c.req.json());
+    notifications?.notify(body.userId, messages.claimed(body.amount));
+    return c.json({ ok: true });
   });
 
   // ── Admin: sync, oracle result, settlement, credit usage ──

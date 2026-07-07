@@ -8,9 +8,12 @@ import {
   isPredictionCorrect,
 } from '@goaly/core';
 import { and, eq } from 'drizzle-orm';
+import { formatUnits } from 'viem';
 import type { DB } from '../db/client';
 import { matches, predictions } from '../db/schema';
 import { HttpError } from '../lib/errors';
+import { fixtureLabel, messages } from './notification-messages';
+import type { Notifier } from './notification.service';
 
 type MatchRow = typeof matches.$inferSelect;
 
@@ -57,6 +60,8 @@ export class PredictionService {
     private readonly db: DB,
     private readonly feeBps: bigint,
     now?: () => number,
+    /** Optional push notifier — fire-and-forget updates on placement/settlement. */
+    private readonly notifier?: Notifier,
   ) {
     this.now = now ?? (() => Date.now());
   }
@@ -85,6 +90,11 @@ export class PredictionService {
       })
       .onConflictDoNothing()
       .run();
+
+    // Fire-and-forget confirmation — never blocks or fails the placement. `row` is the match here.
+    const fixture = fixtureLabel(row.homeTeam, row.awayTeam);
+    this.notifier?.notify(input.userId, messages.predictionPlaced(fixture, input.matchId));
+
     return { id };
   }
 
@@ -119,13 +129,21 @@ export class PredictionService {
     const distribution = distributePot(pot, winners, this.feeBps);
     const payoutById = new Map(distribution.payouts.map((p) => [p.id, p.payout]));
 
+    const fixture = fixtureLabel(row.homeTeam, row.awayTeam);
     for (const prediction of open) {
       const payout = payoutById.get(prediction.id) ?? 0n;
+      const won = payoutById.has(prediction.id);
       this.db
         .update(predictions)
-        .set({ settled: true, won: payoutById.has(prediction.id), payout: payout.toString() })
+        .set({ settled: true, won, payout: payout.toString() })
         .where(eq(predictions.id, prediction.id))
         .run();
+
+      // Fire-and-forget result nudge (USDT has 6 decimals). Never blocks settlement.
+      const message = won
+        ? messages.won(fixture, formatUnits(payout, 6), matchId)
+        : messages.settledNoWin(fixture, matchId);
+      this.notifier?.notify(prediction.userId, message);
     }
 
     return {
