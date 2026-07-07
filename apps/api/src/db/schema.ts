@@ -78,3 +78,15 @@ export const teamCrests = sqliteTable('team_crests', {
   crest: text('crest').notNull().default(''),
   fetchedAt: integer('fetched_at').notNull(),
 });
+
+/**
+ * Web Push subscriptions — one row per browser/device, keyed by its unique push endpoint. A user
+ * (address) can have several. `p256dh`/`auth` are the subscription's encryption keys.
+ */
+export const pushSubscriptions = sqliteTable('push_subscriptions', {
+  endpoint: text('endpoint').primaryKey(),
+  userId: text('user_id').notNull(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  createdAt: integer('created_at').notNull(),
+});

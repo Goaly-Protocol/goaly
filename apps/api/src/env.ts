@@ -15,6 +15,12 @@ const schema = z.object({
   /** Oracle private key for on-chain market settlement (server-side, ORACLE_ROLE). */
   ORACLE_PK: z.string().optional(),
 
+  // Web Push (VAPID). When the key pair is absent, push notifications are DISABLED (no-op).
+  VAPID_PUBLIC_KEY: z.string().optional(),
+  VAPID_PRIVATE_KEY: z.string().optional(),
+  /** `mailto:` or https contact, required by the push spec. */
+  VAPID_SUBJECT: z.string().default('mailto:hello@goaly.fun'),
+
   // Gas faucet — drips a little ETH to a freshly-created embedded account so the user can transact
   // (approve/deposit) without first funding gas themselves.
   /** Private key of the funded faucet wallet. When absent the faucet is DISABLED. */

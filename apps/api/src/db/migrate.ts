@@ -80,6 +80,16 @@ export function migrate(raw: Database): void {
       crest TEXT NOT NULL DEFAULT '',
       fetched_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      endpoint TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      p256dh TEXT NOT NULL,
+      auth TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions (user_id);
   `);
 
   // Backfill closing-odds columns on pre-existing DBs (ignored when already present).

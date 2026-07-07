@@ -15,6 +15,7 @@ import { loadEnv } from './env';
 import { CrestService } from './services/crest.service';
 import { createFaucet } from './services/faucet';
 import { closingWinningOddsBps, parseH2hOdds, winningOddsBps } from './lib/odds';
+import { createNotificationService } from './services/notification.service';
 import { PredictionService } from './services/prediction.service';
 import { createReconciler } from './services/reconcile.service';
 import { SyncService } from './services/sync.service';
@@ -67,7 +68,14 @@ const sync = new SyncService({
   ...(settleOnchain ? { settleOnchain } : {}),
   ...(createMarketOnchain ? { createMarketOnchain } : {}),
 });
-const predictions = new PredictionService(db, BigInt(env.PROTOCOL_FEE_BPS));
+// Web Push (VAPID) — delivers placement/settlement/claim nudges. Disabled (inert) without keys.
+const notifications = createNotificationService({ db, env });
+const predictions = new PredictionService(
+  db,
+  BigInt(env.PROTOCOL_FEE_BPS),
+  undefined,
+  notifications,
+);
 
 // Autonomous yield agent — watches Morpho USDT0 vaults + advises on the vault's backing (WDK wallet).
 const yieldAgent = new YieldAgentService({
@@ -104,7 +112,20 @@ const reconciler = createReconciler({
   ...(settleOnchain ? { settleOnchain } : {}),
 });
 
-const app = createApp({ db, env, sync, predictions, yieldAgent, crests, faucet, reconciler });
+const app = createApp({
+  db,
+  env,
+  sync,
+  predictions,
+  yieldAgent,
+  crests,
+  faucet,
+  reconciler,
+  notifications,
+});
+
+// TODO: kickoff-soon reminder job — a scheduled pass that fires messages.kickoffSoon(...) for
+// matches ~1h from kickoff. Skipped for now (needs a sent-marker so it fires once per match).
 
 // Index on-chain bets (Predicted) into the DB so a wallet's bets always show, even if the
 // client's off-chain record POST failed. The chain is the source of truth.
