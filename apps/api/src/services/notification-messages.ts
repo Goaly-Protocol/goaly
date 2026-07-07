@@ -57,6 +57,14 @@ export const messages = {
     kind: 'claimed',
   }),
 
+  deposited: (amountUsdt: string): NotificationPayload => ({
+    title: 'Deposit received',
+    body: `${amountUsdt} USDT is in your Goaly wallet — ready to predict.`,
+    url: '/play',
+    tag: 'deposited',
+    kind: 'deposited',
+  }),
+
   kickoffSoon: (fixture: string, matchId: string): NotificationPayload => ({
     title: 'Kicking off soon',
     body: `${fixture} starts in about an hour — the market closes at kickoff.`,

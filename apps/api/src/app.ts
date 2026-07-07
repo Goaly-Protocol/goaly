@@ -23,7 +23,7 @@ import {
 } from './lib/odds';
 import type { CrestService } from './services/crest.service';
 import { createFaucet, type Faucet } from './services/faucet';
-import { fetchLeaderboard, fetchMarkets } from './services/indexer-client';
+import { fetchLeaderboard, fetchMarkets, fetchUserClaims } from './services/indexer-client';
 import { messages } from './services/notification-messages';
 import type { NotificationService } from './services/notification.service';
 import { StandingsService } from './services/standings.service';
@@ -427,6 +427,20 @@ export function createApp(deps: AppDeps): Hono {
     }
   });
 
+  // Market ids a user has claimed on-chain (from the indexer) — authoritative claim status for the
+  // portfolio, so a claimed position never shows a live Claim button, even across devices.
+  app.get('/claims', async (c) => {
+    const userId = c.req.query('userId');
+    if (!userId) return c.json({ error: 'userId query param required' }, 400);
+    try {
+      const marketIds = await fetchUserClaims(deps.env.INDEXER_URL, userId);
+      return c.json({ marketIds });
+    } catch (err) {
+      console.error('[claims] indexer unreachable', err);
+      return c.json({ marketIds: [] });
+    }
+  });
+
   // Record a signed Terms & Conditions acceptance (EIP-712 signature is the proof). Idempotent per
   // (address, version) so the same acceptance can be re-posted without duplicating.
   app.post('/terms/accept', async (c) => {
@@ -488,6 +502,12 @@ export function createApp(deps: AppDeps): Hono {
   app.post('/notifications/claimed', async (c) => {
     const body = claimedBody.parse(await c.req.json());
     notifications?.notify(body.userId, messages.claimed(body.amount));
+    return c.json({ ok: true });
+  });
+
+  app.post('/notifications/deposited', async (c) => {
+    const body = claimedBody.parse(await c.req.json());
+    notifications?.notify(body.userId, messages.deposited(body.amount));
     return c.json({ ok: true });
   });
 

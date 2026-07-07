@@ -121,6 +121,26 @@ export async function fetchLeaderboard(
   }));
 }
 
+const USER_CLAIMS_QUERY = /* GraphQL */ `
+  query UserClaims($user: String!) {
+    claims(where: { user: $user }, limit: 1000) {
+      items {
+        marketId
+      }
+    }
+  }
+`;
+
+/** Market ids (lowercased) the user has claimed on-chain, from the indexer's Claimed events. */
+export async function fetchUserClaims(indexerUrl: string, user: string): Promise<string[]> {
+  const data = await queryIndexer<{ claims: Page<{ marketId: string }> }>(
+    indexerUrl,
+    USER_CLAIMS_QUERY,
+    { user: user.toLowerCase() },
+  );
+  return data.claims.items.map((c) => c.marketId.toLowerCase());
+}
+
 const MARKETS_QUERY = /* GraphQL */ `
   query Markets($limit: Int!) {
     markets(orderBy: "updatedTimestamp", orderDirection: "desc", limit: $limit) {
