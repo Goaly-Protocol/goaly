@@ -1,9 +1,12 @@
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import webpush, { WebPushError } from 'web-push';
 import type { DB } from '../db/client';
-import { pushSubscriptions } from '../db/schema';
+import { notifications, pushSubscriptions } from '../db/schema';
 import type { Env } from '../env';
 import type { NotificationPayload } from './notification-messages';
+
+/** An in-app inbox row (also the shape returned by `list`). `readAt` null = unread. */
+export type InboxNotification = typeof notifications.$inferSelect;
 
 /** A browser push subscription, exactly as `JSON.stringify(PushSubscription)` yields it. */
 export interface WebPushSubscription {
@@ -30,6 +33,15 @@ export interface NotificationService extends Notifier {
   unsubscribe(endpoint: string): void;
   /** Deliver a payload to every subscription of a user; returns how many were delivered. */
   send(userId: string, payload: NotificationPayload): Promise<number>;
+  /** Recent in-app inbox rows for a user, newest first, capped at `limit` (default 30). */
+  list(userId: string, limit?: number): InboxNotification[];
+  /**
+   * Mark inbox rows read (`readAt = now`). With no `ids`, marks every unread row; with `ids`, marks
+   * only those that belong to the user. Returns how many rows were updated.
+   */
+  markRead(userId: string, ids?: string[]): number;
+  /** How many of the user's inbox rows are still unread. */
+  unreadCount(userId: string): number;
 }
 
 export interface NotificationDeps {
@@ -113,9 +125,62 @@ export function createNotificationService({ db, env, now }: NotificationDeps): N
   }
 
   function notify(userId: string, payload: NotificationPayload): void {
+    // Persist to the in-app inbox FIRST — this works even when web push is disabled, so the bell/
+    // inbox is always populated. Never throw: the inbox is best-effort like the push below.
+    try {
+      db.insert(notifications)
+        .values({
+          id: crypto.randomUUID(),
+          userId,
+          kind: payload.kind,
+          title: payload.title,
+          body: payload.body,
+          url: payload.url,
+          createdAt: clock(),
+          readAt: null,
+        })
+        .run();
+    } catch (err) {
+      console.error('[notify] inbox insert failed', err);
+    }
     // Fire-and-forget: notifications must never throw into or block the caller's request path.
     send(userId, payload).catch(() => {});
   }
 
-  return { enabled, publicKey, subscribe, unsubscribe, send, notify };
+  function list(userId: string, limit = 30): InboxNotification[] {
+    return db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit)
+      .all();
+  }
+
+  function markRead(userId: string, ids?: string[]): number {
+    const at = clock();
+    // Explicit empty id list → nothing to mark (and inArray([]) is a no-op filter to avoid).
+    if (ids && ids.length === 0) return 0;
+    const scope = ids
+      ? and(eq(notifications.userId, userId), inArray(notifications.id, ids))
+      : and(eq(notifications.userId, userId), isNull(notifications.readAt));
+    const updated = db
+      .update(notifications)
+      .set({ readAt: at })
+      .where(scope)
+      .returning({ id: notifications.id })
+      .all();
+    return updated.length;
+  }
+
+  function unreadCount(userId: string): number {
+    const row = db
+      .select({ count: sql<number>`count(*)` })
+      .from(notifications)
+      .where(and(eq(notifications.userId, userId), isNull(notifications.readAt)))
+      .get();
+    return row?.count ?? 0;
+  }
+
+  return { enabled, publicKey, subscribe, unsubscribe, send, notify, list, markRead, unreadCount };
 }

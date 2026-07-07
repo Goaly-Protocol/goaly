@@ -90,10 +90,28 @@ export function migrate(raw: Database): void {
     );
 
     CREATE INDEX IF NOT EXISTS idx_push_user ON push_subscriptions (user_id);
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      url TEXT NOT NULL,
+      created_at INTEGER NOT NULL,
+      read_at INTEGER
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_notif_user ON notifications (user_id);
   `);
 
-  // Backfill closing-odds columns on pre-existing DBs (ignored when already present).
-  for (const col of ['closing_home_bps', 'closing_draw_bps', 'closing_away_bps']) {
+  // Backfill columns on pre-existing DBs (ignored when already present).
+  for (const col of [
+    'closing_home_bps',
+    'closing_draw_bps',
+    'closing_away_bps',
+    'kickoff_notified_at',
+  ]) {
     try {
       raw.exec(`ALTER TABLE matches ADD COLUMN ${col} INTEGER`);
     } catch {

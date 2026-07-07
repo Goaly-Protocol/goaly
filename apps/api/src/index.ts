@@ -15,6 +15,7 @@ import { loadEnv } from './env';
 import { CrestService } from './services/crest.service';
 import { createFaucet } from './services/faucet';
 import { closingWinningOddsBps, parseH2hOdds, winningOddsBps } from './lib/odds';
+import { createKickoffReminder } from './services/kickoff-reminder.service';
 import { createNotificationService } from './services/notification.service';
 import { PredictionService } from './services/prediction.service';
 import { createReconciler } from './services/reconcile.service';
@@ -124,8 +125,26 @@ const app = createApp({
   notifications,
 });
 
-// TODO: kickoff-soon reminder job — a scheduled pass that fires messages.kickoffSoon(...) for
-// matches ~1h from kickoff. Skipped for now (needs a sent-marker so it fires once per match).
+// Kickoff-soon reminder — nudges every predictor of a match ~1h from kickoff, once per match (the
+// `kickoff_notified_at` marker dedupes). Uses the same notifications service as the notifier, so it
+// writes the in-app inbox even when Web Push is disabled. Mirrors the reconcile wiring: once shortly
+// after startup, then on an interval.
+const kickoffReminder = createKickoffReminder({ db, notifier: notifications });
+const KICKOFF_TICK_MS = 5 * 60 * 1000;
+setTimeout(() => {
+  try {
+    kickoffReminder.run();
+  } catch (error) {
+    console.error('[kickoff] reminder failed', error);
+  }
+}, 15 * 1000);
+setInterval(() => {
+  try {
+    kickoffReminder.run();
+  } catch (error) {
+    console.error('[kickoff] reminder failed', error);
+  }
+}, KICKOFF_TICK_MS);
 
 // Index on-chain bets (Predicted) into the DB so a wallet's bets always show, even if the
 // client's off-chain record POST failed. The chain is the source of truth.

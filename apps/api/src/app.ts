@@ -101,6 +101,11 @@ const unsubscribeBody = z.object({ endpoint: z.string().min(1) });
 
 const claimedBody = z.object({ userId: z.string().min(1), amount: z.string().min(1) });
 
+const readBody = z.object({
+  userId: z.string().min(1),
+  ids: z.array(z.string().min(1)).optional(),
+});
+
 /** National-team meta (name, FIFA code, flag), else a club crest from the cache, else null. */
 function teamMetaFor(name: string, crests?: CrestService) {
   const national = resolveTeam(name);
@@ -484,6 +489,41 @@ export function createApp(deps: AppDeps): Hono {
     const body = claimedBody.parse(await c.req.json());
     notifications?.notify(body.userId, messages.claimed(body.amount));
     return c.json({ ok: true });
+  });
+
+  // ── In-app notification inbox (persisted alongside every push; works without VAPID keys) ──
+  // Recent inbox rows for a user, newest first. Default 30, capped at 100.
+  app.get('/notifications/list', (c) => {
+    const userId = c.req.query('userId');
+    if (!userId) throw new HttpError(400, 'userId query param required');
+    const limit = Math.min(parseLimit(c.req.query('limit'), 30), 100);
+    const rows = notifications?.list(userId, limit) ?? [];
+    return c.json({
+      notifications: rows.map((n) => ({
+        id: n.id,
+        kind: n.kind,
+        title: n.title,
+        body: n.body,
+        url: n.url,
+        createdAt: n.createdAt,
+        readAt: n.readAt,
+      })),
+    });
+  });
+
+  // Mark inbox rows read: all unread when `ids` omitted, else only those ids owned by the user.
+  app.post('/notifications/read', async (c) => {
+    const body = readBody.parse(await c.req.json());
+    const updated = notifications?.markRead(body.userId, body.ids) ?? 0;
+    return c.json({ ok: true, updated });
+  });
+
+  // Unread badge count for a user.
+  app.get('/notifications/unread', (c) => {
+    const userId = c.req.query('userId');
+    if (!userId) throw new HttpError(400, 'userId query param required');
+    const count = notifications?.unreadCount(userId) ?? 0;
+    return c.json({ count });
   });
 
   // ── Admin: sync, oracle result, settlement, credit usage ──
