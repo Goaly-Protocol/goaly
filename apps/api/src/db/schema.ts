@@ -16,6 +16,8 @@ export const matches = sqliteTable('matches', {
   closingDrawBps: integer('closing_draw_bps'),
   closingAwayBps: integer('closing_away_bps'),
   updatedAt: integer('updated_at').notNull(),
+  /** When the "kicking off soon" push was sent (null = not yet), so it fires at most once per match. */
+  kickoffNotifiedAt: integer('kickoff_notified_at'),
 });
 
 /** User predictions. `stake` is USDT0 base units stored as a decimal string (bigint-safe). */
@@ -89,4 +91,19 @@ export const pushSubscriptions = sqliteTable('push_subscriptions', {
   p256dh: text('p256dh').notNull(),
   auth: text('auth').notNull(),
   createdAt: integer('created_at').notNull(),
+});
+
+/**
+ * In-app notification inbox — one row per delivered notification, so the app can render a bell/inbox
+ * even on a device without Web Push. Written alongside every `notify()`. `readAt` null = unread.
+ */
+export const notifications = sqliteTable('notifications', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  kind: text('kind').notNull(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  url: text('url').notNull(),
+  createdAt: integer('created_at').notNull(),
+  readAt: integer('read_at'),
 });

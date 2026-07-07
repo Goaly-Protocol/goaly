@@ -39,6 +39,7 @@ lcov.info
 # web apps (standalone Next.js — not committed to the monorepo)
 apps/app/
 apps/landing/
+apps/automation-marketing/
 
 apps/docs/
 packages/contracts/
