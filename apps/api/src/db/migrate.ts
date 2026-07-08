@@ -118,4 +118,11 @@ export function migrate(raw: Database): void {
       // column already exists
     }
   }
+
+  // Entry odds on predictions (the "avg" price), added after launch → backfill on old DBs.
+  try {
+    raw.exec(`ALTER TABLE predictions ADD COLUMN entry_odds REAL`);
+  } catch {
+    // column already exists
+  }
 }
