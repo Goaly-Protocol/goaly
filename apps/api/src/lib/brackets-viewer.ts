@@ -70,7 +70,10 @@ function advancer(m: KoMatch): string | null {
  */
 function alignRounds(rounds: BracketRound[]): BracketRound[] {
   const out = rounds.map((r) => ({ ...r, matches: [...r.matches] }));
-  for (let r = 0; r < out.length - 1; r += 1) {
+  // Work BACKWARD from the final: each round is ordered to feed its successor, so the successor must
+  // already be aligned first. Going forward would align a round to its successor's raw (date) order
+  // before that successor is itself reordered — leaving the connectors pointing at the wrong teams.
+  for (let r = out.length - 2; r >= 0; r -= 1) {
     const cur = out[r];
     const next = out[r + 1];
     if (!cur || !next || cur.matches.length !== next.matches.length * 2) continue;

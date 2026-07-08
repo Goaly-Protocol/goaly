@@ -110,6 +110,63 @@ describe('toBracketsViewer', () => {
     expect(first).toEqual(['A', 'E', 'C', 'G']);
   });
 
+  test('aligns across THREE rounds — R16 pairs feed QF even when QF must itself be reordered to feed SF', () => {
+    const win = (home: string, away: string) => ({
+      home,
+      away,
+      homeScore: 1,
+      awayScore: 0,
+      homePens: null,
+      awayPens: null,
+    });
+    const tbd = (home: string, away: string) => ({
+      home,
+      away,
+      homeScore: null,
+      awayScore: null,
+      homePens: null,
+      awayPens: null,
+    });
+    // Feed order (dates) is deliberately NOT bracket order at every level.
+    const ko: BracketRound[] = [
+      {
+        id: 'r16',
+        name: 'Round of 16',
+        matches: [
+          win('E', 'e'),
+          win('F', 'f'),
+          win('G', 'g'),
+          win('H', 'h'),
+          win('A', 'a'),
+          win('B', 'b'),
+          win('C', 'c'),
+          win('D', 'd'),
+        ],
+      },
+      {
+        id: 'qf',
+        name: 'Quarter-finals',
+        matches: [win('E', 'F'), win('G', 'H'), win('A', 'B'), win('C', 'D')],
+      },
+      {
+        id: 'sf',
+        name: 'Semi-finals',
+        matches: [tbd('A', 'C'), tbd('E', 'G')],
+      },
+    ];
+    const out = toBracketsViewer(ko, (t) => ({ name: t, imageUrl: null }));
+    const name = Object.fromEntries(out.participants.map((x) => [x.id, x.name]));
+    const homesOf = (roundId: number) =>
+      out.matches
+        .filter((m) => m.round_id === roundId)
+        .sort((a, b) => a.number - b.number)
+        .map((m) => name[(m.opponent1 as { id: number }).id]);
+    // QF is reordered to feed SF (A/C, E/G) → homes A, C, E, G; and R16's consecutive pairs must feed
+    // that reordered QF → homes A, B, C, D, E, F, G, H. A forward pass would leave R16 at E,F,G,H,…
+    expect(homesOf(1)).toEqual(['A', 'C', 'E', 'G']);
+    expect(homesOf(0)).toEqual(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']);
+  });
+
   test('single-elimination stage sized from the first round', () => {
     expect(data.stages[0]?.type).toBe('single_elimination');
     expect(data.stages[0]?.settings.size).toBe(4); // 2 R32 matches × 2
