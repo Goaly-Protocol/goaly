@@ -376,12 +376,26 @@ export function createApp(deps: AppDeps): Hono {
   // ── Predictions ──
   app.post('/predictions', async (c) => {
     const body = placeBody.parse(await c.req.json());
+    // Snapshot the picked outcome's current odds as the position's entry ("avg") price.
+    const mrow = db.select().from(matches).where(eq(matches.id, body.matchId)).get();
+    const oddsNow = mrow
+      ? (matchOdds(db, body.matchId, mrow.homeTeam, mrow.awayTeam) ?? frozenOdds(mrow))
+      : null;
+    const entryOdds =
+      oddsNow && body.pick.market === 'WINNER'
+        ? body.pick.outcome === 'HOME'
+          ? oddsNow.home
+          : body.pick.outcome === 'AWAY'
+            ? oddsNow.away
+            : oddsNow.draw
+        : undefined;
     const created = predictionService.placePrediction({
       userId: body.userId,
       matchId: body.matchId,
       pick: body.pick,
       stake: BigInt(body.stake),
       ...(body.txHash ? { txHash: body.txHash } : {}),
+      ...(entryOdds != null ? { entryOdds } : {}),
     });
     return c.json(created, 201);
   });
@@ -397,7 +411,8 @@ export function createApp(deps: AppDeps): Hono {
       .all();
     const enriched = rows.map((prediction) => {
       const match = db.select().from(matches).where(eq(matches.id, prediction.matchId)).get();
-      return { ...prediction, match: match ? withTeamMeta(match, crests) : null };
+      // withMatchDetail (not just team meta) so each position carries live odds for the "current" price.
+      return { ...prediction, match: match ? withMatchDetail(db, match, crests) : null };
     });
     return c.json({ predictions: enriched });
   });

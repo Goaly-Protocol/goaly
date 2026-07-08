@@ -28,6 +28,8 @@ export interface PlacePredictionInput {
    * event per tx) instead of duplicating. Falls back to a random id for non-on-chain callers.
    */
   txHash?: string;
+  /** Decimal odds of the picked outcome at placement (stored as the position's "avg" price). */
+  entryOdds?: number;
 }
 
 export interface SettlementSummary {
@@ -87,6 +89,7 @@ export class PredictionService {
         pick: JSON.stringify(input.pick),
         stake: input.stake.toString(),
         createdAt: this.now(),
+        ...(input.entryOdds != null ? { entryOdds: input.entryOdds } : {}),
       })
       .onConflictDoNothing()
       .run();

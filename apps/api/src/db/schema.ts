@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 /** Cached match fixtures + results (filled by the credit-aware sync service). */
 export const matches = sqliteTable('matches', {
@@ -32,6 +32,8 @@ export const predictions = sqliteTable('predictions', {
   settled: integer('settled', { mode: 'boolean' }).notNull().default(false),
   won: integer('won', { mode: 'boolean' }),
   payout: text('payout'),
+  /** Decimal odds of the picked outcome at placement — the "avg" entry price. Null for legacy rows. */
+  entryOdds: real('entry_odds'),
 });
 
 /** Legal terms acceptance — one row per (account, terms version), with the EIP-712 signature as proof. */
