@@ -79,7 +79,8 @@ const schema = z.object({
   SETTLE_FALLBACK_HOURS: z.coerce.number().min(1).default(6),
 
   // Protocol fee on pot payouts, in basis points (250 = 2.5%).
-  PROTOCOL_FEE_BPS: z.coerce.number().int().min(0).max(10_000).default(250),
+  // Protocol fee, charged on the YIELD only (never principal). 1000 = 10%.
+  PROTOCOL_FEE_BPS: z.coerce.number().int().min(0).max(10_000).default(1_000),
 
   // Yield Agent — autonomous Morpho rebalancing via a WDK agent wallet (uses ORACLE_PK's MANAGER_ROLE).
   /** Minimum APY improvement (bps) before the agent migrates the vault's backing. */

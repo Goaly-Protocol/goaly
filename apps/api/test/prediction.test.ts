@@ -71,13 +71,14 @@ describe('prediction + settlement flow', () => {
 
     const settle = await postJson(app, '/admin/matches/m1/settle', {});
     expect(settle.status).toBe(200);
-    // pot 20, fee 2.5% = 0.5, distributable 19.5 all to Alice (the only winner).
+    // No-loss: pot 20, Alice (only winner) staked 10 → yield 10 (Bob's stake). Fee 2.5% of the yield
+    // = 0.25; Alice gets her 10 principal back + 9.75 net yield = 19.75. Principal is never fee'd.
     expect(settle.json.pot).toBe('20000000');
-    expect(settle.json.fee).toBe('500000');
+    expect(settle.json.fee).toBe('250000');
     expect(settle.json.winners).toBe(1);
     const payouts = settle.json.payouts as { id: string; payout: string }[];
     expect(payouts).toHaveLength(1);
-    expect(payouts[0]?.payout).toBe('19500000');
+    expect(payouts[0]?.payout).toBe('19750000');
 
     // Bob lost his staked credit but that is repaid by yield on-chain — his row is settled, not won.
     const bob = (await (await app.request('/predictions?userId=bob')).json()) as {
