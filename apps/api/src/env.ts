@@ -73,6 +73,10 @@ const schema = z.object({
     .number()
     .int()
     .default(60 * 60),
+  /** Hours after kickoff at which a scoreless FINISHED match is resolved from the closing-odds
+   *  favorite (the odds feed never delivered a final score). NO-LOSS makes this safe: settling to
+   *  any outcome returns every staker's principal — only the yield prize follows the guessed result. */
+  SETTLE_FALLBACK_HOURS: z.coerce.number().min(1).default(6),
 
   // Protocol fee on pot payouts, in basis points (250 = 2.5%).
   PROTOCOL_FEE_BPS: z.coerce.number().int().min(0).max(10_000).default(250),

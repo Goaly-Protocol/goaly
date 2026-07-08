@@ -191,6 +191,7 @@ export function createApp(deps: AppDeps): Hono {
       db,
       env: deps.env,
       predictionService,
+      now,
       ...(defaultSettleOnchain ? { settleOnchain: defaultSettleOnchain } : {}),
     });
 
